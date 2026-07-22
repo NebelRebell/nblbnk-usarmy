@@ -1,4 +1,4 @@
--- nblbnk_army - Festnahme und Transport
+-- nblbnk_usarmy - Festnahme und Transport
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -60,7 +60,7 @@ end
 -- Zustand des Festgenommenen
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('nblbnk_army:setCuffed', function(state)
+RegisterNetEvent('nblbnk_usarmy:setCuffed', function(state)
   isCuffed = state and true or false
 
   local ped = PlayerPedId()
@@ -88,7 +88,7 @@ RegisterNetEvent('nblbnk_army:setCuffed', function(state)
   end
 end)
 
-RegisterNetEvent('nblbnk_army:setEscorted', function(state, escorterServerId)
+RegisterNetEvent('nblbnk_usarmy:setEscorted', function(state, escorterServerId)
   local ped = PlayerPedId()
 
   if state then
@@ -109,7 +109,7 @@ RegisterNetEvent('nblbnk_army:setEscorted', function(state, escorterServerId)
   end
 end)
 
-RegisterNetEvent('nblbnk_army:putInVehicle', function(netId, seat)
+RegisterNetEvent('nblbnk_usarmy:putInVehicle', function(netId, seat)
   local timeout = 0
 
   while not NetworkDoesEntityExistWithNetworkId(netId) and timeout < 3000 do
@@ -193,7 +193,7 @@ RegisterCommand('cuff', function()
   local target = requireTarget()
 
   if target then
-    TriggerServerEvent('nblbnk_army:toggleCuff', target)
+    TriggerServerEvent('nblbnk_usarmy:toggleCuff', target)
   end
 end, false)
 
@@ -201,7 +201,7 @@ RegisterCommand('escort', function()
   local target = requireTarget()
 
   if target then
-    TriggerServerEvent('nblbnk_army:toggleEscort', target)
+    TriggerServerEvent('nblbnk_usarmy:toggleEscort', target)
   end
 end, false)
 
@@ -237,7 +237,7 @@ RegisterCommand('putin', function()
     return
   end
 
-  TriggerServerEvent('nblbnk_army:putInVehicle', target,
+  TriggerServerEvent('nblbnk_usarmy:putInVehicle', target,
                      NetworkGetNetworkIdFromEntity(vehicle), freeSeat)
 end, false)
 

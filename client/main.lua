@@ -1,4 +1,4 @@
--- nblbnk_army - Clientlogik: Dienst, Umkleide, Waffenkammer, Fahrzeugausgabe
+-- nblbnk_usarmy - Clientlogik: Dienst, Umkleide, Waffenkammer, Fahrzeugausgabe
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -81,10 +81,10 @@ local function toggleDuty()
     return
   end
 
-  TriggerServerEvent('nblbnk_army:toggleDuty')
+  TriggerServerEvent('nblbnk_usarmy:toggleDuty')
 end
 
-RegisterNetEvent('nblbnk_army:setDuty', function(state)
+RegisterNetEvent('nblbnk_usarmy:setDuty', function(state)
   onDuty = state and true or false
   Army.Notify(onDuty and Config.Text.duty_on or Config.Text.duty_off,
               onDuty and 'success' or 'inform')
@@ -147,7 +147,7 @@ local function openCloakroom()
     return
   end
 
-  Army.OpenMenu('nblbnk_army_cloakroom', Config.Text.cloakroom_title, {
+  Army.OpenMenu('nblbnk_usarmy_cloakroom', Config.Text.cloakroom_title, {
     {
       label       = 'Dienstkleidung',
       description = 'Uniform der US Army anlegen',
@@ -185,12 +185,12 @@ local function openArmory()
                     or ('Ab %s'):format(rank and rank.short or ('Grad ' .. entry.minGrade)),
       disabled    = not allowed,
       onSelect    = function()
-        TriggerServerEvent('nblbnk_army:takeFromArmory', index)
+        TriggerServerEvent('nblbnk_usarmy:takeFromArmory', index)
       end,
     }
   end
 
-  Army.OpenMenu('nblbnk_army_armory', Config.Text.armory_title, options)
+  Army.OpenMenu('nblbnk_usarmy_armory', Config.Text.armory_title, options)
 end
 
 -- ---------------------------------------------------------------------------
@@ -235,7 +235,7 @@ local function openGarage(garageIndex)
             return
           end
 
-          TriggerServerEvent('nblbnk_army:requestVehicle', index, garageIndex)
+          TriggerServerEvent('nblbnk_usarmy:requestVehicle', index, garageIndex)
         end,
       }
     end
@@ -246,11 +246,11 @@ local function openGarage(garageIndex)
     return
   end
 
-  Army.OpenMenu('nblbnk_army_garage_' .. garageIndex, Config.Text.garage_title, options)
+  Army.OpenMenu('nblbnk_usarmy_garage_' .. garageIndex, Config.Text.garage_title, options)
 end
 
 --- Der Server hat die Ausgabe bestaetigt und die Netzwerk-ID uebermittelt.
-RegisterNetEvent('nblbnk_army:vehicleSpawned', function(netId, plate)
+RegisterNetEvent('nblbnk_usarmy:vehicleSpawned', function(netId, plate)
   local timeout = 0
 
   while not NetworkDoesEntityExistWithNetworkId(netId) and timeout < 5000 do
@@ -294,7 +294,7 @@ local function storeVehicle()
     return
   end
 
-  TriggerServerEvent('nblbnk_army:storeVehicle', NetworkGetNetworkIdFromEntity(vehicle))
+  TriggerServerEvent('nblbnk_usarmy:storeVehicle', NetworkGetNetworkIdFromEntity(vehicle))
 end
 
 -- ---------------------------------------------------------------------------
@@ -317,27 +317,27 @@ end
 
 local function setupPoints()
   for index, point in ipairs(Config.Locations.duty) do
-    addPoint('nblbnk_army_duty_' .. index, point.coords, point.label,
+    addPoint('nblbnk_usarmy_duty_' .. index, point.coords, point.label,
              'fas fa-clipboard-check', toggleDuty)
   end
 
   for index, point in ipairs(Config.Locations.cloakroom) do
-    addPoint('nblbnk_army_cloak_' .. index, point.coords, point.label,
+    addPoint('nblbnk_usarmy_cloak_' .. index, point.coords, point.label,
              'fas fa-shirt', openCloakroom)
   end
 
   for index, point in ipairs(Config.Locations.armory) do
-    addPoint('nblbnk_army_armory_' .. index, point.coords, point.label,
+    addPoint('nblbnk_usarmy_armory_' .. index, point.coords, point.label,
              'fas fa-gun', openArmory)
   end
 
   for index, point in ipairs(Config.Locations.garage) do
-    addPoint('nblbnk_army_garage_' .. index, point.coords, point.label,
+    addPoint('nblbnk_usarmy_garage_' .. index, point.coords, point.label,
              'fas fa-warehouse', function() openGarage(index) end)
   end
 
   for index, point in ipairs(Config.Locations.impound) do
-    addPoint('nblbnk_army_impound_' .. index, point.coords, point.label,
+    addPoint('nblbnk_usarmy_impound_' .. index, point.coords, point.label,
              'fas fa-square-parking', storeVehicle)
   end
 end
@@ -409,7 +409,7 @@ CreateThread(function()
   end)
 
   -- Dienstzustand beim Verbinden vom Server erfragen.
-  TriggerServerEvent('nblbnk_army:requestDutyState')
+  TriggerServerEvent('nblbnk_usarmy:requestDutyState')
 end)
 
 RegisterCommand('armyduty', function()
