@@ -1,0 +1,10 @@
+# Editor- und Systemdateien
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# Lokale Abweichungen der Konfiguration
+config.local.lua
