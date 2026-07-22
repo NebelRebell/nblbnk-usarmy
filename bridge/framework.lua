@@ -1,4 +1,4 @@
--- nblbnk_usarmy - Bruecken-Adapter fuer ESX und QBCore
+-- nblbnk-usarmy - Bruecken-Adapter fuer ESX und QBCore
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -93,20 +93,20 @@ CreateThread(function()
   end
 
   if not Army.Framework then
-    print('^1[nblbnk_usarmy]^7 Kein unterstuetztes Framework gefunden. ' ..
+    print('^1[nblbnk-usarmy]^7 Kein unterstuetztes Framework gefunden. ' ..
           'Erwartet wird es_extended oder qb-core. Die Ressource bleibt inaktiv.')
     return
   end
 
   if not acquireCoreObject() then
-    print(('^1[nblbnk_usarmy]^7 Framework %s erkannt, aber das geteilte Objekt ' ..
+    print(('^1[nblbnk-usarmy]^7 Framework %s erkannt, aber das geteilte Objekt ' ..
            'war nicht erreichbar. Die Ressource bleibt inaktiv.'):format(Army.Framework))
     Army.Framework = nil
     return
   end
 
   Army.Ready = true
-  print(('^2[nblbnk_usarmy]^7 Framework erkannt: %s'):format(Army.Framework))
+  print(('^2[nblbnk-usarmy]^7 Framework erkannt: %s'):format(Army.Framework))
 end)
 
 --- Blockiert, bis die Bruecke einsatzbereit ist.
@@ -315,7 +315,7 @@ if isServer then
   -- @param message string
   -- @param kind string|nil 'success' | 'error' | 'inform'
   function Army.Notify(src, message, kind)
-    TriggerClientEvent('nblbnk_usarmy:notify', src, message, kind or 'inform')
+    TriggerClientEvent('nblbnk-usarmy:notify', src, message, kind or 'inform')
   end
 
 -- ===========================================================================
@@ -400,7 +400,7 @@ else
     EndTextCommandThefeedPostTicker(false, true)
   end
 
-  RegisterNetEvent('nblbnk_usarmy:notify', function(message, kind)
+  RegisterNetEvent('nblbnk-usarmy:notify', function(message, kind)
     Army.Notify(message, kind)
   end)
 

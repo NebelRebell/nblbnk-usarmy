@@ -1,4 +1,4 @@
--- nblbnk_usarmy - Bruecken-Adapter fuer Inventarsysteme
+-- nblbnk-usarmy - Bruecken-Adapter fuer Inventarsysteme
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -40,7 +40,7 @@ CreateThread(function()
   end
 
   Army.InventorySystem = detectInventory()
-  print(('^2[nblbnk_usarmy]^7 Inventarsystem erkannt: %s'):format(Army.InventorySystem))
+  print(('^2[nblbnk-usarmy]^7 Inventarsystem erkannt: %s'):format(Army.InventorySystem))
 end)
 
 --- Wandelt einen Waffennamen in die Schreibweise des Zielsystems.

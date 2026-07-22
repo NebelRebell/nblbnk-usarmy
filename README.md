@@ -1,4 +1,4 @@
-# nblbnk_usarmy
+# nblbnk-usarmy
 
 **Militaerjob fuer FiveM — laeuft auf ESX und QBCore aus einer einzigen
 Installation.**
@@ -116,7 +116,7 @@ dieselbe Person.
 
 ## Installation
 
-1. Ordner nach `resources/nblbnk_usarmy` kopieren.
+1. Ordner nach `resources/nblbnk-usarmy` kopieren.
 
 2. Job in der Datenbank anlegen:
 
@@ -128,7 +128,7 @@ dieselbe Person.
 3. In der `server.cfg` eintragen:
 
    ```cfg
-   ensure nblbnk_usarmy
+   ensure nblbnk-usarmy
    ```
 
 4. **Koordinaten pruefen.** Die Standorte in `config.lua` liegen im Bereich
