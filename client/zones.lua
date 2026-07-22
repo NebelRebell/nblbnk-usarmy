@@ -1,4 +1,4 @@
--- nblbnk_usarmy - Sperrzone / Militaergelaende
+-- nblbnk-usarmy - Sperrzone / Militaergelaende
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -56,7 +56,7 @@ CreateThread(function()
           end
 
           if zone.alertOnDuty then
-            TriggerServerEvent('nblbnk_usarmy:zoneEntered', index)
+            TriggerServerEvent('nblbnk-usarmy:zoneEntered', index)
           end
         end
       elseif not isInside and wasInside then
@@ -67,7 +67,7 @@ CreateThread(function()
 end)
 
 --- Alarmmeldung fuer Dienstpersonal.
-RegisterNetEvent('nblbnk_usarmy:zoneAlert', function(zoneIndex, coords)
+RegisterNetEvent('nblbnk-usarmy:zoneAlert', function(zoneIndex, coords)
   local zone = Config.RestrictedZones[zoneIndex]
 
   if not zone then

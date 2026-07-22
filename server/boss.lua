@@ -1,4 +1,4 @@
--- nblbnk_usarmy - Serverlogik: Kommandozentrale (Einstellen, Befoerdern, Kasse)
+-- nblbnk-usarmy - Serverlogik: Kommandozentrale (Einstellen, Befoerdern, Kasse)
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -55,7 +55,7 @@ local function collectEmployees()
   return employees
 end
 
-RegisterNetEvent('nblbnk_usarmy:requestBossData', function()
+RegisterNetEvent('nblbnk-usarmy:requestBossData', function()
   local src = source
 
   if not authorizeBoss(src) then
@@ -63,7 +63,7 @@ RegisterNetEvent('nblbnk_usarmy:requestBossData', function()
   end
 
   Army.GetSocietyBalance(function(balance)
-    TriggerClientEvent('nblbnk_usarmy:bossData', src, collectEmployees(), balance)
+    TriggerClientEvent('nblbnk-usarmy:bossData', src, collectEmployees(), balance)
   end)
 end)
 
@@ -71,7 +71,7 @@ end)
 -- Personal
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('nblbnk_usarmy:hire', function(targetSrc)
+RegisterNetEvent('nblbnk-usarmy:hire', function(targetSrc)
   local src = source
 
   if type(targetSrc) ~= 'number' or targetSrc == src then
@@ -108,7 +108,7 @@ RegisterNetEvent('nblbnk_usarmy:hire', function(targetSrc)
   end
 end)
 
-RegisterNetEvent('nblbnk_usarmy:fire', function(targetSrc)
+RegisterNetEvent('nblbnk-usarmy:fire', function(targetSrc)
   local src = source
 
   if type(targetSrc) ~= 'number' then
@@ -145,7 +145,7 @@ RegisterNetEvent('nblbnk_usarmy:fire', function(targetSrc)
   end
 end)
 
-RegisterNetEvent('nblbnk_usarmy:setGrade', function(targetSrc, newGrade)
+RegisterNetEvent('nblbnk-usarmy:setGrade', function(targetSrc, newGrade)
   local src = source
 
   if type(targetSrc) ~= 'number' or type(newGrade) ~= 'number' then
@@ -195,7 +195,7 @@ end)
 -- Kasse
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('nblbnk_usarmy:withdraw', function(amount)
+RegisterNetEvent('nblbnk-usarmy:withdraw', function(amount)
   local src = source
 
   if type(amount) ~= 'number' or amount ~= math.floor(amount) or amount <= 0 then
@@ -216,7 +216,7 @@ RegisterNetEvent('nblbnk_usarmy:withdraw', function(amount)
     if not Army.AddMoney(src, amount, 'bank') then
       -- Die Entnahme hat bereits stattgefunden; ohne Gutschrift waere das
       -- Geld verloren. Deshalb wird der Vorgang protokolliert.
-      print(('^1[nblbnk_usarmy]^7 Gutschrift fehlgeschlagen nach Entnahme von %d ' ..
+      print(('^1[nblbnk-usarmy]^7 Gutschrift fehlgeschlagen nach Entnahme von %d ' ..
              'durch %s. Bitte manuell pruefen.'):format(amount, Army.GetName(src)))
       return
     end
