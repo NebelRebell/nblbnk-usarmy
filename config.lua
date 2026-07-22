@@ -1,51 +1,49 @@
--- nblbnk-usarmy - Konfiguration
+-- nblbnk-usarmy - Configuration
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 
 Config = {}
 
 -- ---------------------------------------------------------------------------
--- Grundeinstellungen
+-- General
 -- ---------------------------------------------------------------------------
 
--- Jobname in der Datenbank (ESX-Tabelle `jobs`) bzw. in
--- QBCore.Shared.Jobs. Muss mit sql/usarmy_esx.sql und
--- sql/qbcore_jobs.lua uebereinstimmen.
+-- Active locale. Shipped: 'en', 'de'. Missing keys fall back to 'en'.
+-- To add a language, drop locales/<code>.lua next to the others and list it
+-- in fxmanifest.lua.
+Config.Locale = 'en'
+
+-- Job name in the database (ESX table `jobs`, or QBCore.Shared.Jobs).
+-- Must match sql/usarmy_esx.sql and sql/qbcore_jobs.lua.
 Config.JobName = 'usarmy'
 
--- Name der Gesellschaft fuer das Boss-Konto.
+-- Society name used for the shared account.
 -- ESX: addon_account `society_usarmy`, QBCore: qb-management `usarmy`.
 Config.Society = 'usarmy'
 
--- Framework erzwingen statt automatisch erkennen.
--- Moegliche Werte: 'auto', 'esx', 'qbcore'
+-- Force a framework instead of detecting it. 'auto' | 'esx' | 'qbcore'
 Config.Framework = 'auto'
 
--- Inventarsystem erzwingen statt automatisch erkennen.
--- Moegliche Werte: 'auto', 'ox_inventory', 'qb-inventory', 'esx', 'qb'
+-- Force an inventory system instead of detecting it.
+-- 'auto' | 'ox_inventory' | 'qb-inventory' | 'esx' | 'qb'
 Config.Inventory = 'auto'
 
--- Menuesystem erzwingen statt automatisch erkennen.
--- Moegliche Werte: 'auto', 'ox_lib', 'qb-menu', 'esx'
+-- Force a menu system instead of detecting it. 'auto' | 'ox_lib' | 'qb-menu' | 'esx'
 Config.Menu = 'auto'
 
--- Interaktion ueber ox_target bzw. qb-target, sofern vorhanden.
--- Ist keines vorhanden, wird auf Marker plus Taste E zurueckgefallen.
+-- Use ox_target or qb-target when available. Falls back to markers plus E.
 Config.UseTarget = true
 
--- Distanz in Metern, ab der ein Interaktionspunkt reagiert.
+-- Distance in metres at which an interaction point reacts.
 Config.InteractDistance = 1.8
 
--- Wie oft der Dienstzustand serverseitig nachgehalten wird (ms).
-Config.DutyCheckInterval = 30000
-
 -- ---------------------------------------------------------------------------
--- Dienstgrade
+-- Ranks
 --
--- ACHTUNG: `grade` muss luekenlos bei 0 beginnen und mit den Eintraegen in
--- der Datenbank uebereinstimmen. `label` erscheint im Spiel, `short` im
--- Boss-Menue und in Meldungen.
+-- NOTE: `grade` must start at 0 without gaps and match the database entries.
+-- `label` is shown in game, `short` in the command centre and in messages.
+-- Rank names are deliberately not translated: they are proper nouns.
 -- ---------------------------------------------------------------------------
 
 Config.Ranks = {
@@ -59,129 +57,131 @@ Config.Ranks = {
   { grade = 7, short = 'COL', label = 'Colonel',              salary = 325 },
 }
 
--- Ab diesem Dienstgrad steht das Boss-Menue offen (Einstellen, Befoerdern,
--- Kasse). Wird zusaetzlich serverseitig geprueft.
+-- Lowest rank allowed to open the command centre. Enforced server side too.
 Config.BossGrade = 6
 
--- Ab diesem Dienstgrad duerfen Festnahme und Transport genutzt werden.
+-- Lowest rank allowed to restrain and transport people.
 Config.ArrestGrade = 1
 
 -- ---------------------------------------------------------------------------
--- Standorte
+-- Locations
 --
--- ACHTUNG: Die Koordinaten liegen im Bereich Fort Zancudo und sind
--- Naeherungswerte. Sie MUESSEN vor dem produktiven Einsatz im Spiel
--- geprueft und angepasst werden. Ermitteln laesst sich die eigene Position
--- z. B. ueber ein Coords-Tool oder /coords, falls vorhanden.
+-- NOTE: These coordinates sit around Fort Zancudo and are approximations.
+-- They MUST be verified in game before production use.
+--
+-- `labelKey` refers to a key in locales/<code>.lua.
 -- ---------------------------------------------------------------------------
 
 Config.Locations = {
 
-  -- Dienst an- und abmelden
+  -- Going on and off duty
   duty = {
-    { coords = vec3(-2047.0, 2807.0, 32.8), label = 'Dienstmeldung' },
+    { coords = vec3(-2047.0, 2807.0, 32.8), labelKey = 'point_duty' },
   },
 
-  -- Umkleide: Dienstkleidung oder Zivil
+  -- Locker room: uniform or civilian clothing
   cloakroom = {
-    { coords = vec3(-2051.5, 2812.0, 32.8), label = 'Umkleide' },
+    { coords = vec3(-2051.5, 2812.0, 32.8), labelKey = 'point_cloakroom' },
   },
 
-  -- Waffenkammer
+  -- Armory
   armory = {
-    { coords = vec3(-2043.0, 2810.5, 32.8), label = 'Waffenkammer' },
+    { coords = vec3(-2043.0, 2810.5, 32.8), labelKey = 'point_armory' },
   },
 
-  -- Fahrzeugausgabe. `spawn` ist die Ausgabeposition inklusive Ausrichtung.
+  -- Vehicle issue. `spawn` is the issue position including heading.
   garage = {
     {
-      coords = vec3(-1978.0, 2841.0, 32.8),
-      spawn  = vec4(-1974.0, 2845.0, 32.8, 240.0),
-      label  = 'Fahrzeugausgabe',
-      class  = 'land',
+      coords   = vec3(-1978.0, 2841.0, 32.8),
+      spawn    = vec4(-1974.0, 2845.0, 32.8, 240.0),
+      labelKey = 'point_garage',
+      class    = 'land',
     },
     {
-      coords = vec3(-1650.0, 2988.0, 60.0),
-      spawn  = vec4(-1654.0, 2992.0, 60.5, 100.0),
-      label  = 'Helipad',
-      class  = 'air',
+      coords   = vec3(-1650.0, 2988.0, 60.0),
+      spawn    = vec4(-1654.0, 2992.0, 60.5, 100.0),
+      labelKey = 'point_helipad',
+      class    = 'air',
     },
   },
 
-  -- Fahrzeug einlagern (Rueckgabe)
+  -- Returning a vehicle
   impound = {
-    { coords = vec3(-1982.0, 2837.0, 32.8), label = 'Fahrzeugrueckgabe' },
+    { coords = vec3(-1982.0, 2837.0, 32.8), labelKey = 'point_impound' },
   },
 }
 
 -- ---------------------------------------------------------------------------
--- Sperrzone
+-- Restricted zones
 -- ---------------------------------------------------------------------------
 
 Config.RestrictedZones = {
   {
-    label   = 'Fort Zancudo',
-    -- Mittelpunkt und Radius in Metern.
-    coords  = vec3(-2100.0, 3050.0, 32.0),
-    radius  = 900.0,
-    -- Warnung an Zivilisten, die die Zone betreten.
+    -- Place names are proper nouns and stay untranslated.
+    label  = 'Fort Zancudo',
+    coords = vec3(-2100.0, 3050.0, 32.0),
+    radius = 900.0,
+
+    -- Warn civilians who enter the zone.
     warnCivilians = true,
-    -- Dienstpersonal im Dienst bekommt eine Meldung, wenn ein Zivilist
-    -- die Zone betritt. Wird serverseitig ausgeloest.
-    alertOnDuty   = true,
-    -- Wartezeit zwischen zwei Alarmen fuer denselben Spieler (ms).
+
+    -- Alert on-duty personnel when a civilian enters. Raised server side.
+    alertOnDuty = true,
+
+    -- Minimum delay between two alerts for the same person, in ms.
     alertCooldown = 60000,
   },
 }
 
 -- ---------------------------------------------------------------------------
--- Waffenkammer
+-- Armory
 --
--- `minGrade` ist der niedrigste Dienstgrad, der den Eintrag entnehmen darf.
--- `item` ist der Itemname im Inventar, `weapon` der Waffen-Hash-Name.
--- Ein Eintrag ist entweder Waffe ODER Item, nicht beides.
+-- `minGrade` is the lowest rank allowed to take the entry.
+-- `item` is an inventory item, `weapon` a weapon hash name.
+-- An entry is either a weapon OR an item, never both.
 -- ---------------------------------------------------------------------------
 
 Config.Armory = {
-  -- Ausruestung
-  { label = 'Schutzweste',        item = 'armor',            count = 1, minGrade = 0 },
-  { label = 'Verbandskasten',     item = 'bandage',          count = 5, minGrade = 0 },
-  { label = 'Handschellen',       item = 'handcuffs',        count = 1, minGrade = 1 },
-  { label = 'Funkgeraet',         item = 'radio',            count = 1, minGrade = 0 },
+  -- Equipment
+  { labelKey = 'arm_armor',     item = 'armor',     count = 1, minGrade = 0 },
+  { labelKey = 'arm_bandage',   item = 'bandage',   count = 5, minGrade = 0 },
+  { labelKey = 'arm_handcuffs', item = 'handcuffs', count = 1, minGrade = 1 },
+  { labelKey = 'arm_radio',     item = 'radio',     count = 1, minGrade = 0 },
 
-  -- Waffen
-  { label = 'Kampfmesser',        weapon = 'WEAPON_KNIFE',        ammo = 0,   minGrade = 0 },
-  { label = 'Pistole',            weapon = 'WEAPON_PISTOL',       ammo = 60,  minGrade = 0 },
-  { label = 'Schrotflinte',       weapon = 'WEAPON_PUMPSHOTGUN',  ammo = 40,  minGrade = 2 },
-  { label = 'Karabiner',          weapon = 'WEAPON_CARBINERIFLE', ammo = 120, minGrade = 3 },
-  { label = 'Sturmgewehr',        weapon = 'WEAPON_ASSAULTRIFLE', ammo = 120, minGrade = 4 },
-  { label = 'Scharfschuetzengewehr', weapon = 'WEAPON_SNIPERRIFLE', ammo = 30, minGrade = 5 },
-  { label = 'Leichtes MG',        weapon = 'WEAPON_MG',           ammo = 200, minGrade = 6 },
+  -- Weapons
+  { labelKey = 'arm_knife',   weapon = 'WEAPON_KNIFE',        ammo = 0,   minGrade = 0 },
+  { labelKey = 'arm_pistol',  weapon = 'WEAPON_PISTOL',       ammo = 60,  minGrade = 0 },
+  { labelKey = 'arm_shotgun', weapon = 'WEAPON_PUMPSHOTGUN',  ammo = 40,  minGrade = 2 },
+  { labelKey = 'arm_carbine', weapon = 'WEAPON_CARBINERIFLE', ammo = 120, minGrade = 3 },
+  { labelKey = 'arm_rifle',   weapon = 'WEAPON_ASSAULTRIFLE', ammo = 120, minGrade = 4 },
+  { labelKey = 'arm_sniper',  weapon = 'WEAPON_SNIPERRIFLE',  ammo = 30,  minGrade = 5 },
+  { labelKey = 'arm_mg',      weapon = 'WEAPON_MG',           ammo = 200, minGrade = 6 },
 }
 
 -- ---------------------------------------------------------------------------
--- Fahrzeuge
+-- Vehicles
 --
--- `class` muss zu einem Garageneintrag in Config.Locations.garage passen.
+-- `class` must match a garage entry in Config.Locations.garage.
+-- Model names are proper nouns and stay untranslated.
 -- ---------------------------------------------------------------------------
 
 Config.Vehicles = {
-  { label = 'Crusader',   model = 'crusader',  class = 'land', minGrade = 0, livery = 0 },
-  { label = 'Barracks',   model = 'barracks',  class = 'land', minGrade = 2, livery = 0 },
-  { label = 'Insurgent',  model = 'insurgent', class = 'land', minGrade = 4, livery = 0 },
-  { label = 'Barrage',    model = 'barrage',   class = 'land', minGrade = 6, livery = 0 },
-  { label = 'Buzzard',    model = 'buzzard2',  class = 'air',  minGrade = 5, livery = 0 },
-  { label = 'Valkyrie',   model = 'valkyrie',  class = 'air',  minGrade = 6, livery = 0 },
-  { label = 'Cargobob',   model = 'cargobob',  class = 'air',  minGrade = 6, livery = 0 },
+  { label = 'Crusader',  model = 'crusader',  class = 'land', minGrade = 0 },
+  { label = 'Barracks',  model = 'barracks',  class = 'land', minGrade = 2 },
+  { label = 'Insurgent', model = 'insurgent', class = 'land', minGrade = 4 },
+  { label = 'Barrage',   model = 'barrage',   class = 'land', minGrade = 6 },
+  { label = 'Buzzard',   model = 'buzzard2',  class = 'air',  minGrade = 5 },
+  { label = 'Valkyrie',  model = 'valkyrie',  class = 'air',  minGrade = 6 },
+  { label = 'Cargobob',  model = 'cargobob',  class = 'air',  minGrade = 6 },
 }
 
 -- ---------------------------------------------------------------------------
--- Dienstkleidung
+-- Uniform
 --
--- Die Werte sind Platzhalter und muessen an die auf dem Server verwendeten
--- Kleidungsressourcen angepasst werden. Ist illenium-appearance,
--- esx_skin oder qb-clothing vorhanden, wird stattdessen dessen Menue
--- verwendet, sofern Config.UseAppearanceResource aktiv ist.
+-- These values are placeholders and have to be adjusted to the clothing
+-- resources used on the server. When illenium-appearance, esx_skin or
+-- qb-clothing is present, its own menu is opened instead, provided
+-- Config.UseAppearanceResource is enabled.
 -- ---------------------------------------------------------------------------
 
 Config.UseAppearanceResource = true
@@ -206,7 +206,7 @@ Config.Uniform = {
 }
 
 -- ---------------------------------------------------------------------------
--- Kartenmarkierungen
+-- Map blip
 -- ---------------------------------------------------------------------------
 
 Config.Blip = {
@@ -216,42 +216,7 @@ Config.Blip = {
   color   = 69,
   scale   = 0.9,
   label   = 'US Army',
-  -- Blip nur fuer Angehoerige des Jobs anzeigen.
+
+  -- Show the blip only to members of the job.
   jobOnly = true,
-}
-
--- ---------------------------------------------------------------------------
--- Texte
--- ---------------------------------------------------------------------------
-
-Config.Text = {
-  duty_on         = 'Dienst angetreten.',
-  duty_off        = 'Dienst beendet.',
-  not_in_job      = 'Du gehoerst nicht zur US Army.',
-  not_on_duty     = 'Das geht nur im Dienst.',
-  rank_too_low    = 'Dein Dienstgrad reicht dafuer nicht aus.',
-  armory_title    = 'Waffenkammer',
-  garage_title    = 'Fahrzeugausgabe',
-  cloakroom_title = 'Umkleide',
-  boss_title      = 'Kommandozentrale',
-  uniform_on      = 'Dienstkleidung angelegt.',
-  uniform_off     = 'Zivilkleidung angelegt.',
-  vehicle_out     = 'Fahrzeug ausgegeben.',
-  vehicle_in      = 'Fahrzeug eingelagert.',
-  vehicle_blocked = 'Die Ausgabeposition ist blockiert.',
-  no_vehicle      = 'Kein Fahrzeug in der Naehe.',
-  impound_denied  = 'Das ist kein Fahrzeug der US Army.',
-  zone_warning    = 'Militaerisches Sperrgebiet. Zutritt verboten.',
-  zone_alert      = 'Unbefugte Person im Sperrgebiet gemeldet.',
-  cuffed          = 'Du wurdest gefesselt.',
-  uncuffed        = 'Die Fesseln wurden geloest.',
-  no_target       = 'Keine Person in der Naehe.',
-  target_not_cuffed = 'Die Person ist nicht gefesselt.',
-  hired           = 'Person eingestellt.',
-  fired           = 'Person entlassen.',
-  promoted        = 'Dienstgrad geaendert.',
-  society_balance = 'Kassenstand: %s',
-  invalid_amount  = 'Ungueltiger Betrag.',
-  not_enough      = 'Nicht genug Guthaben in der Kasse.',
-  press_to_open   = 'Druecke ~INPUT_CONTEXT~ zum Oeffnen',
 }

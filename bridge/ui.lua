@@ -1,11 +1,11 @@
--- nblbnk-usarmy - Bruecken-Adapter fuer Menues, Hinweise und Interaktionspunkte
+-- nblbnk-usarmy - Bridge adapter for menus, hints and interaction points
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Unterstuetzt ox_lib, qb-menu und das ESX-Standardmenue, sowie ox_target
--- und qb-target. Fehlt alles davon, wird auf Marker mit Tastendruck
--- zurueckgefallen.
+-- Supports ox_lib, qb-menu and the stock ESX menu, plus ox_target and
+-- qb-target. When none of those are present it falls back to markers with a
+-- key press.
 
 Army = Army or {}
 
@@ -16,9 +16,8 @@ end
 Army.MenuSystem = nil
 Army.TargetSystem = nil
 
--- Aktuell offene Optionsliste. qb-menu kann keine Funktionen entgegennehmen
--- und meldet die Auswahl ueber ein Event zurueck; deshalb wird die Liste
--- hier zwischengehalten.
+-- Currently open option list. qb-menu cannot take functions and reports the
+-- selection back through an event, so the list is held here.
 local openOptions = nil
 
 local function detectMenu()
@@ -61,21 +60,23 @@ CreateThread(function()
   Army.MenuSystem = detectMenu()
   Army.TargetSystem = detectTarget()
 
-  print(('^2[nblbnk-usarmy]^7 Menuesystem: %s, Interaktion: %s'):format(
-    Army.MenuSystem, Army.TargetSystem or 'Marker'))
+  print(('^2[nblbnk-usarmy]^7 Menu: %s | interaction: %s'):format(
+    Army.MenuSystem, Army.TargetSystem or 'markers'))
 end)
 
 -- ---------------------------------------------------------------------------
--- Menue
+-- Menu
 -- ---------------------------------------------------------------------------
 
---- Oeffnet ein Auswahlmenue.
--- @param id string eindeutige Kennung
--- @param title string Ueberschrift
--- @param options table Liste aus { label, description, disabled, onSelect }
+--- Opens a selection menu.
+-- Labels and descriptions are expected as finished strings; the caller
+-- resolves them through Army.L beforehand.
+-- @param id string unique identifier
+-- @param title string
+-- @param options table list of { label, description, disabled, onSelect }
 function Army.OpenMenu(id, title, options)
   if type(options) ~= 'table' or #options == 0 then
-    Army.Notify(Config.Text.rank_too_low, 'error')
+    Army.Notify('rank_too_low', 'error')
     return
   end
 
@@ -113,8 +114,8 @@ function Army.OpenMenu(id, title, options)
     for index, option in ipairs(options) do
       if option.disabled then
         entries[#entries + 1] = {
-          header   = option.label,
-          txt      = option.description,
+          header       = option.label,
+          txt          = option.description,
           isMenuHeader = true,
         }
       else
@@ -133,7 +134,7 @@ function Army.OpenMenu(id, title, options)
     return
   end
 
-  -- ESX-Standardmenue
+  -- Stock ESX menu
   local elements = {}
 
   for index, option in ipairs(options) do
@@ -150,8 +151,8 @@ function Army.OpenMenu(id, title, options)
   Army.OpenEsxMenu(id, title, elements, options)
 end
 
---- Oeffnet das ESX-Standardmenue. Ausgelagert, damit der Zugriff auf
--- ESX.UI nur an einer Stelle steht.
+--- Opens the stock ESX menu. Split out so the ESX.UI access lives in exactly
+-- one place.
 function Army.OpenEsxMenu(id, title, elements, options)
   local ESX = exports['es_extended']:getSharedObject()
 
@@ -170,9 +171,9 @@ function Army.OpenEsxMenu(id, title, elements, options)
   end)
 end
 
--- Bewusst AddEventHandler statt RegisterNetEvent: qb-menu loest das Event
--- rein clientseitig aus. Als Netz-Event waere es zusaetzlich vom Server
--- ausloesbar, ohne dass es dafuer einen Grund gaebe.
+-- Deliberately AddEventHandler instead of RegisterNetEvent: qb-menu raises
+-- this event purely client side. As a net event it would additionally be
+-- triggerable from the server for no reason.
 AddEventHandler('nblbnk-usarmy:menuSelect', function(payload)
   if not openOptions or type(payload) ~= 'table' then
     return
@@ -186,14 +187,14 @@ AddEventHandler('nblbnk-usarmy:menuSelect', function(payload)
 end)
 
 -- ---------------------------------------------------------------------------
--- Texthinweis
+-- Text hint
 -- ---------------------------------------------------------------------------
 
 local textUiVisible = false
 
---- Blendet einen dauerhaften Hinweis ein oder aus.
+--- Shows or hides a persistent hint.
 -- @param show boolean
--- @param text string|nil
+-- @param text string|nil finished string, not a locale key
 function Army.TextUI(show, text)
   if GetResourceState('ox_lib') == 'started' then
     if show then
@@ -209,8 +210,8 @@ function Army.TextUI(show, text)
     return
   end
 
-  -- Ohne ox_lib wird der native Hilfetext verwendet. Er muss pro Frame
-  -- gezeichnet werden, deshalb kein Zustandsvergleich.
+  -- Without ox_lib the native help text is used. It has to be drawn every
+  -- frame, so there is no state comparison here.
   if show and text then
     BeginTextCommandDisplayHelp('STRING')
     AddTextComponentSubstringPlayerName(text)
@@ -219,14 +220,14 @@ function Army.TextUI(show, text)
 end
 
 -- ---------------------------------------------------------------------------
--- Interaktionspunkte
+-- Interaction points
 -- ---------------------------------------------------------------------------
 
 local registeredZones = {}
 
---- Legt einen Interaktionspunkt an.
--- Liefert true, wenn eine Target-Ressource genutzt wurde; bei false muss
--- der Aufrufer selbst einen Marker zeichnen.
+--- Registers an interaction point.
+-- Returns true when a target resource handled it; on false the caller has to
+-- draw a marker itself.
 -- @param name string
 -- @param coords vector3
 -- @param label string
@@ -285,7 +286,7 @@ function Army.AddInteraction(name, coords, label, icon, onSelect, canInteract)
   return false
 end
 
---- Entfernt alle angelegten Interaktionspunkte.
+--- Removes every registered interaction point.
 function Army.ClearInteractions()
   for _, zone in ipairs(registeredZones) do
     if zone.system == 'ox_target' then

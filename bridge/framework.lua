@@ -1,11 +1,10 @@
--- nblbnk-usarmy - Bruecken-Adapter fuer ESX und QBCore
+-- nblbnk-usarmy - Bridge adapter for ESX and QBCore
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Der uebrige Code dieser Ressource ruft ausschliesslich Funktionen aus
--- diesem Modul auf und enthaelt keine framework-spezifischen Aufrufe.
--- Siehe references/09_frameworks/bridges.md des eingesetzten Skills.
+-- The rest of this resource only calls functions from this module and
+-- contains no framework specific calls of its own.
 
 Army = Army or {}
 
@@ -17,12 +16,35 @@ Army.Ready = false
 local ESX, QB
 
 -- ---------------------------------------------------------------------------
--- Erkennung
+-- Localisation
 -- ---------------------------------------------------------------------------
 
---- Ermittelt das aktive Framework.
--- GetResourceState ist gegenueber einem ungeprueften exports-Zugriff
--- vorzuziehen, weil es auch 'stopped' und 'missing' unterscheidet.
+--- Looks up a translated string.
+-- Falls back to English when the key is missing from the active locale, and
+-- to the key itself when it is missing everywhere. That way a typo shows up
+-- in game instead of silently producing an empty line.
+-- @param key string
+-- @param ... any format arguments
+-- @return string
+function Army.L(key, ...)
+  local active = Locales and Locales[Config.Locale]
+  local fallback = Locales and Locales['en']
+  local text = (active and active[key]) or (fallback and fallback[key]) or key
+
+  if select('#', ...) > 0 then
+    return text:format(...)
+  end
+
+  return text
+end
+
+-- ---------------------------------------------------------------------------
+-- Detection
+-- ---------------------------------------------------------------------------
+
+--- Determines the active framework.
+-- GetResourceState is preferable to an unguarded exports call because it also
+-- distinguishes 'stopped' and 'missing'.
 -- @return string|nil
 local function detectFramework()
   if Config.Framework ~= 'auto' then
@@ -40,7 +62,7 @@ local function detectFramework()
   return nil
 end
 
---- Holt das geteilte Objekt des erkannten Frameworks.
+--- Fetches the shared object of the detected framework.
 -- @return boolean
 local function acquireCoreObject()
   if Army.Framework == 'esx' then
@@ -53,8 +75,8 @@ local function acquireCoreObject()
       return true
     end
 
-    -- Aeltere ESX-Staende kennen den Export nicht und liefern das Objekt
-    -- ausschliesslich ueber ein Event.
+    -- Older ESX builds do not provide the export and hand the object over
+    -- through an event only.
     TriggerEvent('esx:getSharedObject', function(obj2) ESX = obj2 end)
 
     local waited = 0
@@ -83,7 +105,7 @@ local function acquireCoreObject()
 end
 
 CreateThread(function()
-  -- Dem Framework Zeit geben, vollstaendig zu starten.
+  -- Give the framework time to start up completely.
   local waited = 0
   while not Army.Framework and waited < 30000 do
     Army.Framework = detectFramework()
@@ -93,24 +115,25 @@ CreateThread(function()
   end
 
   if not Army.Framework then
-    print('^1[nblbnk-usarmy]^7 Kein unterstuetztes Framework gefunden. ' ..
-          'Erwartet wird es_extended oder qb-core. Die Ressource bleibt inaktiv.')
+    print('^1[nblbnk-usarmy]^7 No supported framework found. Expected ' ..
+          'es_extended or qb-core. The resource stays inactive.')
     return
   end
 
   if not acquireCoreObject() then
-    print(('^1[nblbnk-usarmy]^7 Framework %s erkannt, aber das geteilte Objekt ' ..
-           'war nicht erreichbar. Die Ressource bleibt inaktiv.'):format(Army.Framework))
+    print(('^1[nblbnk-usarmy]^7 Framework %s detected, but its shared object ' ..
+           'was unreachable. The resource stays inactive.'):format(Army.Framework))
     Army.Framework = nil
     return
   end
 
   Army.Ready = true
-  print(('^2[nblbnk-usarmy]^7 Framework erkannt: %s'):format(Army.Framework))
+  print(('^2[nblbnk-usarmy]^7 Framework detected: %s | locale: %s')
+        :format(Army.Framework, Config.Locale))
 end)
 
---- Blockiert, bis die Bruecke einsatzbereit ist.
--- @param timeout number|nil Millisekunden, Standard 30000
+--- Blocks until the bridge is ready.
+-- @param timeout number|nil milliseconds, defaults to 30000
 -- @return boolean
 function Army.WaitUntilReady(timeout)
   local waited = 0
@@ -125,10 +148,10 @@ function Army.WaitUntilReady(timeout)
 end
 
 -- ---------------------------------------------------------------------------
--- Rangwerkzeug (beide Seiten)
+-- Rank helpers (both sides)
 -- ---------------------------------------------------------------------------
 
---- Liefert den Rangeintrag zu einem Dienstgrad.
+--- Returns the rank entry for a grade.
 -- @param grade number
 -- @return table|nil
 function Army.GetRank(grade)
@@ -141,7 +164,7 @@ function Army.GetRank(grade)
   return nil
 end
 
---- Hoechster in der Konfiguration vorhandener Dienstgrad.
+--- Highest grade present in the configuration.
 -- @return number
 function Army.MaxGrade()
   local max = 0
@@ -156,14 +179,13 @@ function Army.MaxGrade()
 end
 
 -- ===========================================================================
--- Serverseite
+-- Server side
 -- ===========================================================================
 
 if isServer then
 
-  --- Liefert das framework-spezifische Spielerobjekt.
-  -- Bewusst nicht zwischengespeichert: der Zustand kann sich jederzeit
-  -- aendern (siehe esx/player.md und qbcore/player.md des Skills).
+  --- Returns the framework specific player object.
+  -- Deliberately not cached: the underlying state can change at any time.
   -- @param src number
   -- @return table|nil
   function Army.GetPlayer(src)
@@ -178,7 +200,7 @@ if isServer then
     return QB.Functions.GetPlayer(src)
   end
 
-  --- Job und Dienstgrad eines Spielers.
+  --- Job and grade of a player.
   -- @param src number
   -- @return table|nil { name = string, grade = number }
   function Army.GetJob(src)
@@ -197,9 +219,9 @@ if isServer then
     return { name = job.name, grade = tonumber(job.grade.level) or 0 }
   end
 
-  --- Prueft, ob ein Spieler zur US Army gehoert.
+  --- Checks whether a player belongs to the US Army.
   -- @param src number
-  -- @return boolean, number Zugehoerigkeit und Dienstgrad
+  -- @return boolean, number membership and grade
   function Army.IsMember(src)
     local job = Army.GetJob(src)
 
@@ -210,7 +232,7 @@ if isServer then
     return true, job.grade
   end
 
-  --- Setzt Job und Dienstgrad.
+  --- Sets job and grade.
   -- @param src number
   -- @param jobName string
   -- @param grade number
@@ -231,9 +253,9 @@ if isServer then
     return true
   end
 
-  --- Spiegelt den Dienstzustand in das Framework, sofern es einen kennt.
-  -- QBCore fuehrt `job.onduty`; ESX kennt serverseitig kein Gegenstueck,
-  -- dort ist der Zustand dieser Ressource massgeblich.
+  --- Mirrors the duty state into the framework when it has one.
+  -- QBCore tracks `job.onduty`; ESX has no server side equivalent, so this
+  -- resource is authoritative there.
   -- @param src number
   -- @param onDuty boolean
   function Army.MirrorDuty(src, onDuty)
@@ -248,7 +270,7 @@ if isServer then
     end
   end
 
-  --- Anzeigename eines Spielers.
+  --- Display name of a player.
   -- @param src number
   -- @return string
   function Army.GetName(src)
@@ -266,7 +288,7 @@ if isServer then
     return ('%s %s'):format(charinfo.firstname, charinfo.lastname)
   end
 
-  --- Eindeutige Kennung eines Spielers.
+  --- Unique identifier of a player.
   -- @param src number
   -- @return string|nil
   function Army.GetIdentifier(src)
@@ -283,10 +305,10 @@ if isServer then
     return player.PlayerData.citizenid
   end
 
-  --- Geld gutschreiben.
+  --- Credits money to a player.
   -- @param src number
   -- @param amount number
-  -- @param account string|nil 'cash' oder 'bank', Standard 'bank'
+  -- @param account string|nil 'cash' or 'bank', defaults to 'bank'
   -- @return boolean
   function Army.AddMoney(src, amount, account)
     local player = Army.GetPlayer(src)
@@ -310,21 +332,24 @@ if isServer then
     return player.Functions.AddMoney(account, amount) and true or false
   end
 
-  --- Meldung an einen Spieler senden.
+  --- Sends a message to a player.
+  -- The key is resolved on the client so that every player sees the text in
+  -- the locale their own client is running.
   -- @param src number
-  -- @param message string
+  -- @param key string locale key
   -- @param kind string|nil 'success' | 'error' | 'inform'
-  function Army.Notify(src, message, kind)
-    TriggerClientEvent('nblbnk-usarmy:notify', src, message, kind or 'inform')
+  -- @param ... any format arguments
+  function Army.Notify(src, key, kind, ...)
+    TriggerClientEvent('nblbnk-usarmy:notify', src, key, kind or 'inform', { ... })
   end
 
 -- ===========================================================================
--- Clientseite
+-- Client side
 -- ===========================================================================
 
 else
 
-  --- Aktueller Job des lokalen Spielers.
+  --- Current job of the local player.
   -- @return table { name = string, grade = number }
   function Army.GetJob()
     if not Army.Ready then
@@ -350,16 +375,15 @@ else
     return { name = data.job.name, grade = tonumber(data.job.grade.level) or 0 }
   end
 
-  --- Gehoert der lokale Spieler zur US Army?
-  -- Rein fuer die Anzeige. Jede sicherheitsrelevante Pruefung findet
-  -- zusaetzlich serverseitig statt.
+  --- Does the local player belong to the US Army?
+  -- For display only. Every security relevant check also happens server side.
   -- @return boolean, number
   function Army.IsMember()
     local job = Army.GetJob()
     return job.name == Config.JobName, job.grade
   end
 
-  --- Registriert eine Rueckmeldung bei Jobwechseln.
+  --- Registers a callback for job changes.
   -- @param callback function(job)
   function Army.OnJobChange(callback)
     if Army.Framework == 'esx' then
@@ -373,11 +397,14 @@ else
     end
   end
 
-  --- Meldung anzeigen.
-  -- @param message string
+  --- Shows a message. Accepts a locale key, not a finished string.
+  -- @param key string
   -- @param kind string|nil
-  function Army.Notify(message, kind)
+  -- @param ... any format arguments
+  function Army.Notify(key, kind, ...)
     kind = kind or 'inform'
+
+    local message = Army.L(key, ...)
 
     if GetResourceState('ox_lib') == 'started' then
       exports.ox_lib:notify({ description = message, type = kind })
@@ -394,14 +421,28 @@ else
       return
     end
 
-    -- Letzte Rueckfallebene ohne Framework-UI.
+    -- Last resort without any framework UI.
     BeginTextCommandThefeedPost('STRING')
     AddTextComponentSubstringPlayerName(message)
     EndTextCommandThefeedPostTicker(false, true)
   end
 
-  RegisterNetEvent('nblbnk-usarmy:notify', function(message, kind)
-    Army.Notify(message, kind)
+  RegisterNetEvent('nblbnk-usarmy:notify', function(key, kind, args)
+    if type(key) ~= 'string' then
+      return
+    end
+
+    -- String arguments may be locale keys themselves, for example an item
+    -- name. Army.L returns unknown keys unchanged, so plain strings such as
+    -- a rank name simply pass through. This is what lets the server send a
+    -- key and every player still read it in their own locale.
+    local resolved = {}
+
+    for index, value in ipairs(args or {}) do
+      resolved[index] = type(value) == 'string' and Army.L(value) or value
+    end
+
+    Army.Notify(key, kind, table.unpack(resolved))
   end)
 
 end

@@ -1,19 +1,18 @@
--- nblbnk-usarmy - Jobdefinition fuer QBCore
+-- nblbnk-usarmy - Job definition for QBCore
 --
 -- Copyright (C) 2026 NebelRebell
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Dies ist KEINE ladbare Datei der Ressource. Der folgende Block wird in
--- die Jobliste des Servers uebernommen, ueblicherweise in
+-- This is NOT a file loaded by the resource. Copy the block below into the
+-- server's job list, usually
 --   qb-core/shared/jobs.lua
--- innerhalb der Tabelle QBCore.Shared.Jobs.
+-- inside the QBCore.Shared.Jobs table.
 --
--- Die Dienstgrade muessen mit Config.Ranks in config.lua uebereinstimmen.
--- QBCore zaehlt Grades ab 0, genau wie diese Ressource.
+-- The ranks must match Config.Ranks in config.lua. QBCore counts grades from
+-- 0, exactly like this resource.
 --
--- Zu uebernehmen ist der Eintrag ['usarmy'] samt Inhalt. Das umgebende
--- `return {` ... `}` dient nur dazu, diese Datei als gueltiges Lua
--- pruefbar zu halten.
+-- Copy the ['usarmy'] entry including its contents. The surrounding
+-- `return {` ... `}` only exists so this file stays valid, checkable Lua.
 
 return {
 
@@ -36,8 +35,8 @@ return {
 
 }
 
--- Hinweis zum Gesellschaftskonto:
--- Wird qb-management eingesetzt, legt es das Konto fuer 'usarmy'
--- ueblicherweise selbst an, sobald der Job existiert. Fehlt qb-management,
--- meldet das Boss-Menue einen Kassenstand von 0 und die Entnahme schlaegt
--- fehl; die Personalverwaltung funktioniert davon unabhaengig.
+-- Note on the society account:
+-- When qb-management is in use it usually creates the account for 'usarmy'
+-- by itself once the job exists. Without qb-management the command centre
+-- reports a balance of 0 and withdrawals fail; staff management is
+-- unaffected.

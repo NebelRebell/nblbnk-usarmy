@@ -1,15 +1,15 @@
--- nblbnk-usarmy - Clientlogik: Kommandozentrale
+-- nblbnk-usarmy - Client logic: command centre
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Reine Darstellung. Jede hier ausgeloeste Aktion wird serverseitig erneut
--- auf Berechtigung geprueft (server/boss.lua).
+-- Presentation only. Every action raised here is checked again server side
+-- (server/boss.lua).
 
 local employees = {}
 local societyBalance = 0
 
---- Naechster anderer Spieler in Reichweite.
+--- Nearest other player within range.
 -- @param maxDistance number
 -- @return number|nil
 local function getClosestPlayer(maxDistance)
@@ -33,13 +33,13 @@ local function getClosestPlayer(maxDistance)
   return closest
 end
 
---- Fragt einen Betrag ab. Nutzt ox_lib, sofern vorhanden, sonst eine
--- Auswahl fester Betraege.
+--- Asks for an amount. Uses ox_lib when available, otherwise offers a
+-- selection of fixed amounts.
 -- @param callback function(number|nil)
 local function askAmount(callback)
   if GetResourceState('ox_lib') == 'started' then
-    local input = exports.ox_lib:inputDialog(Config.Text.boss_title, {
-      { type = 'number', label = 'Betrag', min = 1, required = true },
+    local input = exports.ox_lib:inputDialog(Army.L('boss_title'), {
+      { type = 'number', label = Army.L('amount'), min = 1, required = true },
     })
 
     callback(input and tonumber(input[1]) or nil)
@@ -55,17 +55,17 @@ local function askAmount(callback)
     }
   end
 
-  Army.OpenMenu('nblbnk-usarmy_amount', 'Betrag waehlen', options)
+  Army.OpenMenu('nblbnk-usarmy_amount', Army.L('choose_amount'), options)
 end
 
---- Menue zur Rangaenderung einer Person.
+--- Rank change menu for a single person.
 local function openGradeMenu(employee)
   local options = {}
 
   for _, rank in ipairs(Config.Ranks) do
     options[#options + 1] = {
       label       = ('%s - %s'):format(rank.short, rank.label),
-      description = rank.grade == employee.grade and 'Aktueller Dienstgrad' or nil,
+      description = rank.grade == employee.grade and Army.L('rank_current_hint') or nil,
       disabled    = rank.grade == employee.grade,
       onSelect    = function()
         TriggerServerEvent('nblbnk-usarmy:setGrade', employee.source, rank.grade)
@@ -76,17 +76,17 @@ local function openGradeMenu(employee)
   Army.OpenMenu('nblbnk-usarmy_grade', employee.name, options)
 end
 
---- Menue fuer eine einzelne Person.
+--- Menu for a single person.
 local function openEmployeeMenu(employee)
   Army.OpenMenu('nblbnk-usarmy_employee', employee.name, {
     {
-      label       = 'Dienstgrad aendern',
-      description = ('Aktuell: %s'):format(employee.label),
+      label       = Army.L('change_rank'),
+      description = Army.L('current_rank', employee.label),
       onSelect    = function() openGradeMenu(employee) end,
     },
     {
-      label       = 'Entlassen',
-      description = 'Person aus der US Army entfernen',
+      label       = Army.L('dismiss'),
+      description = Army.L('dismiss_desc'),
       onSelect    = function()
         TriggerServerEvent('nblbnk-usarmy:fire', employee.source)
       end,
@@ -96,7 +96,7 @@ end
 
 local function openEmployeeList()
   if #employees == 0 then
-    Army.Notify('Niemand im Dienst erreichbar.', 'inform')
+    Army.Notify('staff_none', 'inform')
     return
   end
 
@@ -110,24 +110,24 @@ local function openEmployeeList()
     }
   end
 
-  Army.OpenMenu('nblbnk-usarmy_employees', 'Personal', options)
+  Army.OpenMenu('nblbnk-usarmy_employees', Army.L('staff'), options)
 end
 
 local function openBossMenu()
-  Army.OpenMenu('nblbnk-usarmy_boss', Config.Text.boss_title, {
+  Army.OpenMenu('nblbnk-usarmy_boss', Army.L('boss_title'), {
     {
-      label       = 'Personal',
-      description = ('%d Personen verbunden'):format(#employees),
+      label       = Army.L('staff'),
+      description = Army.L('staff_count', #employees),
       onSelect    = openEmployeeList,
     },
     {
-      label       = 'Einstellen',
-      description = 'Person in der Naehe aufnehmen',
+      label       = Army.L('hire'),
+      description = Army.L('hire_desc'),
       onSelect    = function()
         local target = getClosestPlayer(3.0)
 
         if not target then
-          Army.Notify(Config.Text.no_target, 'error')
+          Army.Notify('no_target', 'error')
           return
         end
 
@@ -135,8 +135,8 @@ local function openBossMenu()
       end,
     },
     {
-      label       = 'Kasse',
-      description = Config.Text.society_balance:format(tostring(societyBalance)),
+      label       = Army.L('account'),
+      description = Army.L('society_balance', tostring(societyBalance)),
       onSelect    = function()
         askAmount(function(amount)
           if not amount or amount <= 0 then
@@ -160,16 +160,16 @@ RegisterCommand('armyboss', function()
   local isMember, grade = Army.IsMember()
 
   if not isMember then
-    Army.Notify(Config.Text.not_in_job, 'error')
+    Army.Notify('not_in_job', 'error')
     return
   end
 
   if grade < Config.BossGrade then
-    Army.Notify(Config.Text.rank_too_low, 'error')
+    Army.Notify('rank_too_low', 'error')
     return
   end
 
   TriggerServerEvent('nblbnk-usarmy:requestBossData')
 end, false)
 
-RegisterKeyMapping('armyboss', 'Kommandozentrale oeffnen', 'keyboard', '')
+RegisterKeyMapping('armyboss', Army.L('key_boss'), 'keyboard', '')

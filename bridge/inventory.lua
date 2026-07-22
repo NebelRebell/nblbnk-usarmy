@@ -1,11 +1,11 @@
--- nblbnk-usarmy - Bruecken-Adapter fuer Inventarsysteme
+-- nblbnk-usarmy - Bridge adapter for inventory systems
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Unterstuetzt ox_inventory, qb-inventory sowie die Standardinventare von
--- ESX und QBCore. Alle Funktionen laufen ausschliesslich serverseitig;
--- Itemvergabe vom Client aus waere manipulierbar (rules/security.md).
+-- Supports ox_inventory, qb-inventory and the stock inventories of ESX and
+-- QBCore. Everything here runs server side only; handing out items from the
+-- client would be trivially manipulable.
 
 Army = Army or {}
 
@@ -15,7 +15,7 @@ end
 
 Army.InventorySystem = nil
 
---- Ermittelt das aktive Inventarsystem.
+--- Determines the active inventory system.
 -- @return string
 local function detectInventory()
   if Config.Inventory ~= 'auto' then
@@ -30,7 +30,7 @@ local function detectInventory()
     return 'qb-inventory'
   end
 
-  -- Ohne eigenstaendige Inventarressource greift das Framework-Standardinventar.
+  -- Without a dedicated inventory resource the framework default applies.
   return Army.Framework == 'esx' and 'esx' or 'qb'
 end
 
@@ -40,12 +40,11 @@ CreateThread(function()
   end
 
   Army.InventorySystem = detectInventory()
-  print(('^2[nblbnk-usarmy]^7 Inventarsystem erkannt: %s'):format(Army.InventorySystem))
+  print(('^2[nblbnk-usarmy]^7 Inventory detected: %s'):format(Army.InventorySystem))
 end)
 
---- Wandelt einen Waffennamen in die Schreibweise des Zielsystems.
--- ox_inventory fuehrt Waffen als Items in Grossschreibung, QBCore in
--- Kleinschreibung.
+--- Converts a weapon name into the spelling of the target system.
+-- ox_inventory keeps weapons as uppercase items, QBCore as lowercase ones.
 -- @param weapon string
 -- @return string
 local function weaponItemName(weapon)
@@ -56,7 +55,7 @@ local function weaponItemName(weapon)
   return weapon:lower()
 end
 
---- Gibt einem Spieler ein Item.
+--- Gives an item to a player.
 -- @param src number
 -- @param item string
 -- @param count number
@@ -84,8 +83,7 @@ function Army.AddItem(src, item, count, metadata)
 
   local added = player.Functions.AddItem(item, count, false, metadata)
 
-  -- qb-inventory blendet das Item-Fenster nur ein, wenn es aktiv
-  -- benachrichtigt wird.
+  -- qb-inventory only shows its item box when it is actively notified.
   if added and Army.InventorySystem == 'qb-inventory' then
     local itemData = exports['qb-core']:GetCoreObject().Shared.Items[item]
 
@@ -97,7 +95,7 @@ function Army.AddItem(src, item, count, metadata)
   return added and true or false
 end
 
---- Nimmt einem Spieler ein Item ab.
+--- Takes an item away from a player.
 -- @param src number
 -- @param item string
 -- @param count number
@@ -135,7 +133,7 @@ function Army.RemoveItem(src, item, count)
   return removed and true or false
 end
 
---- Anzahl eines Items im Besitz eines Spielers.
+--- How many of an item a player carries.
 -- @param src number
 -- @param item string
 -- @return number
@@ -160,11 +158,11 @@ function Army.GetItemCount(src, item)
   return entry and entry.amount or 0
 end
 
---- Gibt einem Spieler eine Waffe.
--- Bei itembasierten Inventaren wird die Waffe als Item vergeben, sonst
--- ueber die Waffenfunktion des Frameworks.
+--- Gives a weapon to a player.
+-- Item based inventories receive it as an item, otherwise the framework
+-- weapon function is used.
 -- @param src number
--- @param weapon string z. B. 'WEAPON_PISTOL'
+-- @param weapon string e.g. 'WEAPON_PISTOL'
 -- @param ammo number
 -- @return boolean
 function Army.AddWeapon(src, weapon, ammo)
@@ -190,15 +188,15 @@ function Army.AddWeapon(src, weapon, ammo)
     return true
   end
 
-  -- QBCore fuehrt Waffen als Items in Kleinschreibung.
+  -- QBCore keeps weapons as lowercase items.
   return Army.AddItem(src, weaponItemName(weapon), 1, { ammo = ammo })
 end
 
 -- ---------------------------------------------------------------------------
--- Gesellschaftskonto
+-- Society account
 -- ---------------------------------------------------------------------------
 
---- Kassenstand der Gesellschaft.
+--- Current balance of the society account.
 -- @param callback function(number)
 function Army.GetSocietyBalance(callback)
   if Army.Framework == 'esx' then
@@ -227,7 +225,7 @@ function Army.GetSocietyBalance(callback)
   callback(0)
 end
 
---- Entnimmt Geld aus der Gesellschaftskasse.
+--- Withdraws money from the society account.
 -- @param amount number
 -- @param callback function(boolean)
 function Army.RemoveSocietyMoney(amount, callback)

@@ -1,20 +1,19 @@
--- nblbnk-usarmy - Festnahme und Transport
+-- nblbnk-usarmy - Restraint and transport
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Der Client fordert eine Aktion nur an. Ob sie zulaessig ist, entscheidet
--- ausschliesslich der Server anhand von Job, Dienstgrad, Dienstzustand und
--- dem serverseitig bekannten Abstand beider Spieler.
+-- The client only requests an action. Whether it is allowed is decided
+-- exclusively by the server, based on job, rank, duty state and the distance
+-- between both players as the server knows it.
 
 local isCuffed = false
 local isEscorted = false
-local escortedBy = nil
 
 local CUFF_DICT = 'mp_arresting'
 local CUFF_ANIM = 'idle'
 
---- Laedt ein Animations-Dictionary mit Zeitgrenze.
+--- Loads an animation dictionary with a time limit.
 local function loadAnimDict(dict)
   if HasAnimDictLoaded(dict) then
     return true
@@ -32,9 +31,9 @@ local function loadAnimDict(dict)
   return false
 end
 
---- Naechster anderer Spieler in Reichweite.
+--- Nearest other player within range.
 -- @param maxDistance number
--- @return number|nil Server-ID
+-- @return number|nil server id
 local function getClosestPlayer(maxDistance)
   local ped = PlayerPedId()
   local coords = GetEntityCoords(ped)
@@ -57,7 +56,7 @@ local function getClosestPlayer(maxDistance)
 end
 
 -- ---------------------------------------------------------------------------
--- Zustand des Festgenommenen
+-- State of the restrained player
 -- ---------------------------------------------------------------------------
 
 RegisterNetEvent('nblbnk-usarmy:setCuffed', function(state)
@@ -72,7 +71,7 @@ RegisterNetEvent('nblbnk-usarmy:setCuffed', function(state)
 
     SetEnableHandcuffs(ped, true)
     SetPedCanPlayGestureAnims(ped, false)
-    Army.Notify(Config.Text.cuffed, 'error')
+    Army.Notify('cuffed', 'error')
   else
     ClearPedTasks(ped)
     SetEnableHandcuffs(ped, false)
@@ -81,10 +80,9 @@ RegisterNetEvent('nblbnk-usarmy:setCuffed', function(state)
     if isEscorted then
       DetachEntity(ped, true, false)
       isEscorted = false
-      escortedBy = nil
     end
 
-    Army.Notify(Config.Text.uncuffed, 'inform')
+    Army.Notify('uncuffed', 'inform')
   end
 end)
 
@@ -101,11 +99,9 @@ RegisterNetEvent('nblbnk-usarmy:setEscorted', function(state, escorterServerId)
     AttachEntityToEntity(ped, escorterPed, 11816, 0.54, 0.54, 0.0, 0.0, 0.0, 0.0,
                          false, false, false, false, 2, false)
     isEscorted = true
-    escortedBy = escorterServerId
   else
     DetachEntity(ped, true, false)
     isEscorted = false
-    escortedBy = nil
   end
 end)
 
@@ -137,7 +133,7 @@ RegisterNetEvent('nblbnk-usarmy:putInVehicle', function(netId, seat)
   TaskWarpPedIntoVehicle(ped, vehicle, seat)
 end)
 
--- Steuerung sperren, solange jemand gefesselt ist.
+-- Lock the controls while somebody is restrained.
 CreateThread(function()
   while true do
     local wait = 500
@@ -145,15 +141,15 @@ CreateThread(function()
     if isCuffed then
       wait = 0
 
-      DisableControlAction(0, 21,  true) -- Sprint
-      DisableControlAction(0, 24,  true) -- Angriff
-      DisableControlAction(0, 25,  true) -- Zielen
-      DisableControlAction(0, 22,  true) -- Springen
-      DisableControlAction(0, 23,  true) -- Fahrzeug betreten
-      DisableControlAction(0, 37,  true) -- Waffenrad
-      DisableControlAction(0, 45,  true) -- Nachladen
-      DisableControlAction(0, 47,  true) -- Waffe
-      DisableControlAction(0, 264, true) -- Nahkampf
+      DisableControlAction(0, 21,  true) -- sprint
+      DisableControlAction(0, 24,  true) -- attack
+      DisableControlAction(0, 25,  true) -- aim
+      DisableControlAction(0, 22,  true) -- jump
+      DisableControlAction(0, 23,  true) -- enter vehicle
+      DisableControlAction(0, 37,  true) -- weapon wheel
+      DisableControlAction(0, 45,  true) -- reload
+      DisableControlAction(0, 47,  true) -- weapon
+      DisableControlAction(0, 264, true) -- melee
       DisableControlAction(0, 257, true)
       DisableControlAction(0, 140, true)
       DisableControlAction(0, 141, true)
@@ -162,7 +158,7 @@ CreateThread(function()
 
       local ped = PlayerPedId()
 
-      -- Animation erneut setzen, falls sie unterbrochen wurde.
+      -- Re-apply the animation in case something interrupted it.
       if not isEscorted and not IsEntityPlayingAnim(ped, CUFF_DICT, CUFF_ANIM, 3) then
         if loadAnimDict(CUFF_DICT) then
           TaskPlayAnim(ped, CUFF_DICT, CUFF_ANIM, 8.0, -8.0, -1, 49, 0, false, false, false)
@@ -175,14 +171,14 @@ CreateThread(function()
 end)
 
 -- ---------------------------------------------------------------------------
--- Aktionen des Dienstpersonals
+-- Actions available to on-duty personnel
 -- ---------------------------------------------------------------------------
 
 local function requireTarget()
   local target = getClosestPlayer(3.0)
 
   if not target then
-    Army.Notify(Config.Text.no_target, 'error')
+    Army.Notify('no_target', 'error')
     return nil
   end
 
@@ -217,11 +213,11 @@ RegisterCommand('putin', function()
   local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 6.0, 0, 71)
 
   if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
-    Army.Notify(Config.Text.no_vehicle, 'error')
+    Army.Notify('no_vehicle', 'error')
     return
   end
 
-  -- Ersten freien Sitzplatz suchen, Fahrersitz ausgenommen.
+  -- Look for the first free seat, driver seat excluded.
   local seats = GetVehicleModelNumberOfSeats(GetEntityModel(vehicle))
   local freeSeat = nil
 
@@ -233,7 +229,7 @@ RegisterCommand('putin', function()
   end
 
   if not freeSeat then
-    Army.Notify(Config.Text.no_vehicle, 'error')
+    Army.Notify('no_vehicle', 'error')
     return
   end
 
@@ -241,9 +237,10 @@ RegisterCommand('putin', function()
                      NetworkGetNetworkIdFromEntity(vehicle), freeSeat)
 end, false)
 
-RegisterKeyMapping('cuff',   'Person fesseln oder loesen', 'keyboard', '')
-RegisterKeyMapping('escort', 'Person eskortieren',         'keyboard', '')
-RegisterKeyMapping('putin',  'Person ins Fahrzeug setzen', 'keyboard', '')
+-- No default keys on purpose, so nothing collides with existing bindings.
+RegisterKeyMapping('cuff',   Army.L('key_cuff'),   'keyboard', '')
+RegisterKeyMapping('escort', Army.L('key_escort'), 'keyboard', '')
+RegisterKeyMapping('putin',  Army.L('key_putin'),  'keyboard', '')
 
 AddEventHandler('onResourceStop', function(resource)
   if resource ~= GetCurrentResourceName() then

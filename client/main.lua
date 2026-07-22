@@ -1,21 +1,19 @@
--- nblbnk-usarmy - Clientlogik: Dienst, Umkleide, Waffenkammer, Fahrzeugausgabe
+-- nblbnk-usarmy - Client logic: duty, locker room, armory, vehicle issue
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Saemtliche Pruefungen hier dienen nur der Anzeige. Jede Aktion wird
--- zusaetzlich serverseitig auf Job, Dienstgrad, Dienstzustand und Naehe
--- geprueft (rules/security.md).
+-- Every check in this file exists for display purposes only. Each action is
+-- validated again server side against job, rank, duty state and distance.
 
 local onDuty = false
-local inUniform = false
 local blipHandle = nil
 
--- Punkte, die ohne Target-Ressource per Marker dargestellt werden.
+-- Points rendered as markers when no target resource is available.
 local markerPoints = {}
 
 -- ---------------------------------------------------------------------------
--- Hilfsfunktionen
+-- Helpers
 -- ---------------------------------------------------------------------------
 
 local function isMember()
@@ -30,12 +28,12 @@ end
 
 local function requireDuty()
   if not isMember() then
-    Army.Notify(Config.Text.not_in_job, 'error')
+    Army.Notify('not_in_job', 'error')
     return false
   end
 
   if not onDuty then
-    Army.Notify(Config.Text.not_on_duty, 'error')
+    Army.Notify('not_on_duty', 'error')
     return false
   end
 
@@ -43,7 +41,7 @@ local function requireDuty()
 end
 
 -- ---------------------------------------------------------------------------
--- Kartenmarkierung
+-- Map blip
 -- ---------------------------------------------------------------------------
 
 local function refreshBlip()
@@ -72,12 +70,12 @@ local function refreshBlip()
 end
 
 -- ---------------------------------------------------------------------------
--- Dienst
+-- Duty
 -- ---------------------------------------------------------------------------
 
 local function toggleDuty()
   if not isMember() then
-    Army.Notify(Config.Text.not_in_job, 'error')
+    Army.Notify('not_in_job', 'error')
     return
   end
 
@@ -86,19 +84,16 @@ end
 
 RegisterNetEvent('nblbnk-usarmy:setDuty', function(state)
   onDuty = state and true or false
-  Army.Notify(onDuty and Config.Text.duty_on or Config.Text.duty_off,
-              onDuty and 'success' or 'inform')
+  Army.Notify(onDuty and 'duty_on' or 'duty_off', onDuty and 'success' or 'inform')
 end)
 
 -- ---------------------------------------------------------------------------
--- Umkleide
+-- Locker room
 -- ---------------------------------------------------------------------------
 
 local function applyUniform(useUniform)
-  inUniform = useUniform
-
   if Config.UseAppearanceResource then
-    -- Bevorzugt wird die auf dem Server vorhandene Kleidungsressource.
+    -- Prefer whichever clothing resource the server actually runs.
     if GetResourceState('illenium-appearance') == 'started' then
       TriggerEvent('illenium-appearance:client:openClothingShop')
       return
@@ -110,27 +105,27 @@ local function applyUniform(useUniform)
     end
   end
 
-  -- Rueckfallebene: die in der Konfiguration hinterlegten Komponenten.
+  -- Fallback: the components stored in the configuration.
   local ped = PlayerPedId()
   local isMale = GetEntityModel(ped) == GetHashKey('mp_m_freemode_01')
   local set = isMale and Config.Uniform.male or Config.Uniform.female
 
   if not useUniform then
-    -- Ohne Kleidungsressource kann die Zivilkleidung nicht
-    -- wiederhergestellt werden; das Framework-Menue uebernimmt das.
+    -- Without a clothing resource the civilian outfit cannot be restored,
+    -- so the framework menu has to take over.
     if GetResourceState('esx_skin') == 'started' then
       TriggerEvent('esx_skin:openRestoreClothesMenu')
       return
     end
 
-    Army.Notify(Config.Text.uniform_off, 'inform')
+    Army.Notify('uniform_off', 'inform')
     return
   end
 
   if GetResourceState('esx_skin') == 'started' then
     TriggerEvent('skinchanger:loadClothes', nil, set)
   else
-    -- Ohne skinchanger werden die Komponenten direkt gesetzt.
+    -- Without skinchanger the components are applied directly.
     SetPedComponentVariation(ped, 8,  set['tshirt_1'], set['tshirt_2'], 0)
     SetPedComponentVariation(ped, 11, set['torso_1'],  set['torso_2'],  0)
     SetPedComponentVariation(ped, 3,  set['arms'],     0,               0)
@@ -138,31 +133,31 @@ local function applyUniform(useUniform)
     SetPedComponentVariation(ped, 6,  set['shoes_1'],  set['shoes_2'],  0)
   end
 
-  Army.Notify(Config.Text.uniform_on, 'success')
+  Army.Notify('uniform_on', 'success')
 end
 
 local function openCloakroom()
   if not isMember() then
-    Army.Notify(Config.Text.not_in_job, 'error')
+    Army.Notify('not_in_job', 'error')
     return
   end
 
-  Army.OpenMenu('nblbnk-usarmy_cloakroom', Config.Text.cloakroom_title, {
+  Army.OpenMenu('nblbnk-usarmy_cloakroom', Army.L('cloakroom_title'), {
     {
-      label       = 'Dienstkleidung',
-      description = 'Uniform der US Army anlegen',
+      label       = Army.L('uniform_duty'),
+      description = Army.L('uniform_duty_desc'),
       onSelect    = function() applyUniform(true) end,
     },
     {
-      label       = 'Zivilkleidung',
-      description = 'Dienstkleidung ablegen',
+      label       = Army.L('uniform_civ'),
+      description = Army.L('uniform_civ_desc'),
       onSelect    = function() applyUniform(false) end,
     },
   })
 end
 
 -- ---------------------------------------------------------------------------
--- Waffenkammer
+-- Armory
 -- ---------------------------------------------------------------------------
 
 local function openArmory()
@@ -176,13 +171,19 @@ local function openArmory()
   for index, entry in ipairs(Config.Armory) do
     local allowed = playerGrade >= entry.minGrade
     local rank = Army.GetRank(entry.minGrade)
+    local description
+
+    if allowed then
+      description = entry.weapon
+                    and Army.L('ammo_label', entry.ammo or 0)
+                    or Army.L('amount_label', entry.count or 1)
+    else
+      description = Army.L('requires_rank', rank and rank.short or tostring(entry.minGrade))
+    end
 
     options[#options + 1] = {
-      label       = entry.label,
-      description = allowed
-                    and (entry.weapon and ('Munition: %d'):format(entry.ammo or 0)
-                                       or ('Menge: %d'):format(entry.count or 1))
-                    or ('Ab %s'):format(rank and rank.short or ('Grad ' .. entry.minGrade)),
+      label       = Army.L(entry.labelKey),
+      description = description,
       disabled    = not allowed,
       onSelect    = function()
         TriggerServerEvent('nblbnk-usarmy:takeFromArmory', index)
@@ -190,14 +191,14 @@ local function openArmory()
     }
   end
 
-  Army.OpenMenu('nblbnk-usarmy_armory', Config.Text.armory_title, options)
+  Army.OpenMenu('nblbnk-usarmy_armory', Army.L('armory_title'), options)
 end
 
 -- ---------------------------------------------------------------------------
--- Fahrzeugausgabe
+-- Vehicle issue
 -- ---------------------------------------------------------------------------
 
---- Prueft, ob an der Ausgabeposition Platz ist.
+--- Checks whether the issue position is clear.
 -- @param spawn vector4
 -- @return boolean
 local function spawnPointFree(spawn)
@@ -227,11 +228,11 @@ local function openGarage(garageIndex)
       options[#options + 1] = {
         label       = vehicle.label,
         description = allowed and vehicle.model
-                      or ('Ab %s'):format(rank and rank.short or ('Grad ' .. vehicle.minGrade)),
+                      or Army.L('requires_rank', rank and rank.short or tostring(vehicle.minGrade)),
         disabled    = not allowed,
         onSelect    = function()
           if not spawnPointFree(garage.spawn) then
-            Army.Notify(Config.Text.vehicle_blocked, 'error')
+            Army.Notify('vehicle_blocked', 'error')
             return
           end
 
@@ -242,14 +243,14 @@ local function openGarage(garageIndex)
   end
 
   if #options == 0 then
-    Army.Notify(Config.Text.rank_too_low, 'error')
+    Army.Notify('rank_too_low', 'error')
     return
   end
 
-  Army.OpenMenu('nblbnk-usarmy_garage_' .. garageIndex, Config.Text.garage_title, options)
+  Army.OpenMenu('nblbnk-usarmy_garage_' .. garageIndex, Army.L('garage_title'), options)
 end
 
---- Der Server hat die Ausgabe bestaetigt und die Netzwerk-ID uebermittelt.
+--- The server confirmed the issue and sent the network id.
 RegisterNetEvent('nblbnk-usarmy:vehicleSpawned', function(netId, plate)
   local timeout = 0
 
@@ -272,10 +273,10 @@ RegisterNetEvent('nblbnk-usarmy:vehicleSpawned', function(netId, plate)
   SetVehicleHasBeenOwnedByPlayer(vehicle, true)
   TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
 
-  Army.Notify(Config.Text.vehicle_out, 'success')
+  Army.Notify('vehicle_out', 'success')
 end)
 
---- Fahrzeugrueckgabe.
+--- Returning a vehicle.
 local function storeVehicle()
   if not requireDuty() then
     return
@@ -290,7 +291,7 @@ local function storeVehicle()
   end
 
   if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
-    Army.Notify(Config.Text.no_vehicle, 'error')
+    Army.Notify('no_vehicle', 'error')
     return
   end
 
@@ -298,11 +299,11 @@ local function storeVehicle()
 end
 
 -- ---------------------------------------------------------------------------
--- Interaktionspunkte
+-- Interaction points
 -- ---------------------------------------------------------------------------
 
---- Legt einen Punkt an. Nutzt eine Target-Ressource, sofern vorhanden,
--- sonst wird der Punkt fuer die Marker-Rueckfallebene vorgemerkt.
+--- Registers a point. Uses a target resource when present, otherwise queues
+-- the point for the marker fallback.
 local function addPoint(name, coords, label, icon, onSelect)
   local handled = Army.AddInteraction(name, coords, label, icon, onSelect, isMember)
 
@@ -317,33 +318,33 @@ end
 
 local function setupPoints()
   for index, point in ipairs(Config.Locations.duty) do
-    addPoint('nblbnk-usarmy_duty_' .. index, point.coords, point.label,
+    addPoint('nblbnk-usarmy_duty_' .. index, point.coords, Army.L(point.labelKey),
              'fas fa-clipboard-check', toggleDuty)
   end
 
   for index, point in ipairs(Config.Locations.cloakroom) do
-    addPoint('nblbnk-usarmy_cloak_' .. index, point.coords, point.label,
+    addPoint('nblbnk-usarmy_cloak_' .. index, point.coords, Army.L(point.labelKey),
              'fas fa-shirt', openCloakroom)
   end
 
   for index, point in ipairs(Config.Locations.armory) do
-    addPoint('nblbnk-usarmy_armory_' .. index, point.coords, point.label,
+    addPoint('nblbnk-usarmy_armory_' .. index, point.coords, Army.L(point.labelKey),
              'fas fa-gun', openArmory)
   end
 
   for index, point in ipairs(Config.Locations.garage) do
-    addPoint('nblbnk-usarmy_garage_' .. index, point.coords, point.label,
+    addPoint('nblbnk-usarmy_garage_' .. index, point.coords, Army.L(point.labelKey),
              'fas fa-warehouse', function() openGarage(index) end)
   end
 
   for index, point in ipairs(Config.Locations.impound) do
-    addPoint('nblbnk-usarmy_impound_' .. index, point.coords, point.label,
+    addPoint('nblbnk-usarmy_impound_' .. index, point.coords, Army.L(point.labelKey),
              'fas fa-square-parking', storeVehicle)
   end
 end
 
--- Marker-Rueckfallebene. Laeuft nur, wenn keine Target-Ressource aktiv ist,
--- und schaltet erst in Fahrzeugnaehe auf Frame-Takt (references/11_performance).
+-- Marker fallback. Only runs when no target resource is active and only
+-- switches to frame rate once a point is actually close by.
 CreateThread(function()
   if not Army.WaitUntilReady() then
     return
@@ -372,7 +373,7 @@ CreateThread(function()
       end
 
       if nearest and nearestDistance < Config.InteractDistance then
-        Army.TextUI(true, Config.Text.press_to_open)
+        Army.TextUI(true, Army.L('press_to_open'))
 
         if IsControlJustReleased(0, 38) then -- E
           Army.TextUI(false)
@@ -388,7 +389,7 @@ CreateThread(function()
 end)
 
 -- ---------------------------------------------------------------------------
--- Start
+-- Start-up
 -- ---------------------------------------------------------------------------
 
 CreateThread(function()
@@ -402,13 +403,13 @@ CreateThread(function()
   Army.OnJobChange(function()
     refreshBlip()
 
-    -- Wer den Job verliert, ist automatisch ausser Dienst.
+    -- Losing the job means being off duty automatically.
     if not isMember() and onDuty then
       onDuty = false
     end
   end)
 
-  -- Dienstzustand beim Verbinden vom Server erfragen.
+  -- Ask the server for the duty state after connecting.
   TriggerServerEvent('nblbnk-usarmy:requestDutyState')
 end)
 
