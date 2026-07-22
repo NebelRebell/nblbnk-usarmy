@@ -1,4 +1,4 @@
--- nblbnk_army - Konfiguration
+-- nblbnk_usarmy - Konfiguration
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.

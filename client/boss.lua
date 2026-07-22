@@ -1,4 +1,4 @@
--- nblbnk_army - Clientlogik: Kommandozentrale
+-- nblbnk_usarmy - Clientlogik: Kommandozentrale
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -55,7 +55,7 @@ local function askAmount(callback)
     }
   end
 
-  Army.OpenMenu('nblbnk_army_amount', 'Betrag waehlen', options)
+  Army.OpenMenu('nblbnk_usarmy_amount', 'Betrag waehlen', options)
 end
 
 --- Menue zur Rangaenderung einer Person.
@@ -68,17 +68,17 @@ local function openGradeMenu(employee)
       description = rank.grade == employee.grade and 'Aktueller Dienstgrad' or nil,
       disabled    = rank.grade == employee.grade,
       onSelect    = function()
-        TriggerServerEvent('nblbnk_army:setGrade', employee.source, rank.grade)
+        TriggerServerEvent('nblbnk_usarmy:setGrade', employee.source, rank.grade)
       end,
     }
   end
 
-  Army.OpenMenu('nblbnk_army_grade', employee.name, options)
+  Army.OpenMenu('nblbnk_usarmy_grade', employee.name, options)
 end
 
 --- Menue fuer eine einzelne Person.
 local function openEmployeeMenu(employee)
-  Army.OpenMenu('nblbnk_army_employee', employee.name, {
+  Army.OpenMenu('nblbnk_usarmy_employee', employee.name, {
     {
       label       = 'Dienstgrad aendern',
       description = ('Aktuell: %s'):format(employee.label),
@@ -88,7 +88,7 @@ local function openEmployeeMenu(employee)
       label       = 'Entlassen',
       description = 'Person aus der US Army entfernen',
       onSelect    = function()
-        TriggerServerEvent('nblbnk_army:fire', employee.source)
+        TriggerServerEvent('nblbnk_usarmy:fire', employee.source)
       end,
     },
   })
@@ -110,11 +110,11 @@ local function openEmployeeList()
     }
   end
 
-  Army.OpenMenu('nblbnk_army_employees', 'Personal', options)
+  Army.OpenMenu('nblbnk_usarmy_employees', 'Personal', options)
 end
 
 local function openBossMenu()
-  Army.OpenMenu('nblbnk_army_boss', Config.Text.boss_title, {
+  Army.OpenMenu('nblbnk_usarmy_boss', Config.Text.boss_title, {
     {
       label       = 'Personal',
       description = ('%d Personen verbunden'):format(#employees),
@@ -131,7 +131,7 @@ local function openBossMenu()
           return
         end
 
-        TriggerServerEvent('nblbnk_army:hire', target)
+        TriggerServerEvent('nblbnk_usarmy:hire', target)
       end,
     },
     {
@@ -143,14 +143,14 @@ local function openBossMenu()
             return
           end
 
-          TriggerServerEvent('nblbnk_army:withdraw', math.floor(amount))
+          TriggerServerEvent('nblbnk_usarmy:withdraw', math.floor(amount))
         end)
       end,
     },
   })
 end
 
-RegisterNetEvent('nblbnk_army:bossData', function(list, balance)
+RegisterNetEvent('nblbnk_usarmy:bossData', function(list, balance)
   employees = list or {}
   societyBalance = balance or 0
   openBossMenu()
@@ -169,7 +169,7 @@ RegisterCommand('armyboss', function()
     return
   end
 
-  TriggerServerEvent('nblbnk_army:requestBossData')
+  TriggerServerEvent('nblbnk_usarmy:requestBossData')
 end, false)
 
 RegisterKeyMapping('armyboss', 'Kommandozentrale oeffnen', 'keyboard', '')

@@ -1,4 +1,4 @@
--- nblbnk_army - Serverlogik: Dienst, Waffenkammer, Fahrzeuge, Festnahme
+-- nblbnk_usarmy - Serverlogik: Dienst, Waffenkammer, Fahrzeuge, Festnahme
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -91,7 +91,7 @@ end
 -- Dienst
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('nblbnk_army:toggleDuty', function()
+RegisterNetEvent('nblbnk_usarmy:toggleDuty', function()
   local src = source
 
   if not authorize(src) then
@@ -110,12 +110,12 @@ RegisterNetEvent('nblbnk_army:toggleDuty', function()
 
   dutyState[src] = not dutyState[src]
   Army.MirrorDuty(src, dutyState[src])
-  TriggerClientEvent('nblbnk_army:setDuty', src, dutyState[src])
+  TriggerClientEvent('nblbnk_usarmy:setDuty', src, dutyState[src])
 end)
 
-RegisterNetEvent('nblbnk_army:requestDutyState', function()
+RegisterNetEvent('nblbnk_usarmy:requestDutyState', function()
   local src = source
-  TriggerClientEvent('nblbnk_army:setDuty', src, dutyState[src] or false)
+  TriggerClientEvent('nblbnk_usarmy:setDuty', src, dutyState[src] or false)
 end)
 
 AddEventHandler('playerDropped', function()
@@ -145,7 +145,7 @@ end
 -- Waffenkammer
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('nblbnk_army:takeFromArmory', function(index)
+RegisterNetEvent('nblbnk_usarmy:takeFromArmory', function(index)
   local src = source
 
   if not isValidIndex(index, Config.Armory) then
@@ -188,7 +188,7 @@ local function makePlate()
   return ('ARMY%04d'):format(math.random(0, 9999))
 end
 
-RegisterNetEvent('nblbnk_army:requestVehicle', function(vehicleIndex, garageIndex)
+RegisterNetEvent('nblbnk_usarmy:requestVehicle', function(vehicleIndex, garageIndex)
   local src = source
 
   if not isValidIndex(vehicleIndex, Config.Vehicles)
@@ -235,14 +235,14 @@ RegisterNetEvent('nblbnk_army:requestVehicle', function(vehicleIndex, garageInde
   -- Kennzeichnung als Dienstfahrzeug. Der StateBag wird serverseitig
   -- gesetzt und ist damit nicht vom Client manipulierbar.
   local state = Entity(vehicle).state
-  state:set('nblbnk_army', true, true)
-  state:set('nblbnk_army_plate', plate, true)
+  state:set('nblbnk_usarmy', true, true)
+  state:set('nblbnk_usarmy_plate', plate, true)
 
-  TriggerClientEvent('nblbnk_army:vehicleSpawned', src,
+  TriggerClientEvent('nblbnk_usarmy:vehicleSpawned', src,
                      NetworkGetNetworkIdFromEntity(vehicle), plate)
 end)
 
-RegisterNetEvent('nblbnk_army:storeVehicle', function(netId)
+RegisterNetEvent('nblbnk_usarmy:storeVehicle', function(netId)
   local src = source
 
   if type(netId) ~= 'number' then
@@ -261,7 +261,7 @@ RegisterNetEvent('nblbnk_army:storeVehicle', function(netId)
   end
 
   -- Nur eigene Dienstfahrzeuge duerfen eingelagert werden.
-  if not Entity(vehicle).state.nblbnk_army then
+  if not Entity(vehicle).state.nblbnk_usarmy then
     Army.Notify(src, Config.Text.impound_denied, 'error')
     return
   end
@@ -284,7 +284,7 @@ end)
 -- Sperrzone
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('nblbnk_army:zoneEntered', function(zoneIndex)
+RegisterNetEvent('nblbnk_usarmy:zoneEntered', function(zoneIndex)
   local src = source
 
   if not isValidIndex(zoneIndex, Config.RestrictedZones) then
@@ -321,7 +321,7 @@ RegisterNetEvent('nblbnk_army:zoneEntered', function(zoneIndex)
   local coords = GetEntityCoords(ped)
 
   for _, officer in ipairs(getOnDutyPlayers()) do
-    TriggerClientEvent('nblbnk_army:zoneAlert', officer, zoneIndex, coords)
+    TriggerClientEvent('nblbnk_usarmy:zoneAlert', officer, zoneIndex, coords)
   end
 end)
 
@@ -329,7 +329,7 @@ end)
 -- Festnahme und Transport
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('nblbnk_army:toggleCuff', function(targetSrc)
+RegisterNetEvent('nblbnk_usarmy:toggleCuff', function(targetSrc)
   local src = source
 
   if type(targetSrc) ~= 'number' or targetSrc == src then
@@ -354,13 +354,13 @@ RegisterNetEvent('nblbnk_army:toggleCuff', function(targetSrc)
   -- Wer geloest wird, wird zugleich nicht mehr eskortiert.
   if not cuffedState[targetSrc] and escortState[targetSrc] then
     escortState[targetSrc] = nil
-    TriggerClientEvent('nblbnk_army:setEscorted', targetSrc, false)
+    TriggerClientEvent('nblbnk_usarmy:setEscorted', targetSrc, false)
   end
 
-  TriggerClientEvent('nblbnk_army:setCuffed', targetSrc, cuffedState[targetSrc])
+  TriggerClientEvent('nblbnk_usarmy:setCuffed', targetSrc, cuffedState[targetSrc])
 end)
 
-RegisterNetEvent('nblbnk_army:toggleEscort', function(targetSrc)
+RegisterNetEvent('nblbnk_usarmy:toggleEscort', function(targetSrc)
   local src = source
 
   if type(targetSrc) ~= 'number' or targetSrc == src then
@@ -388,14 +388,14 @@ RegisterNetEvent('nblbnk_army:toggleEscort', function(targetSrc)
 
   if escortState[targetSrc] then
     escortState[targetSrc] = nil
-    TriggerClientEvent('nblbnk_army:setEscorted', targetSrc, false)
+    TriggerClientEvent('nblbnk_usarmy:setEscorted', targetSrc, false)
   else
     escortState[targetSrc] = src
-    TriggerClientEvent('nblbnk_army:setEscorted', targetSrc, true, src)
+    TriggerClientEvent('nblbnk_usarmy:setEscorted', targetSrc, true, src)
   end
 end)
 
-RegisterNetEvent('nblbnk_army:putInVehicle', function(targetSrc, netId, seat)
+RegisterNetEvent('nblbnk_usarmy:putInVehicle', function(targetSrc, netId, seat)
   local src = source
 
   if type(targetSrc) ~= 'number' or type(netId) ~= 'number' or type(seat) ~= 'number' then
@@ -432,8 +432,8 @@ RegisterNetEvent('nblbnk_army:putInVehicle', function(targetSrc, netId, seat)
 
   if escortState[targetSrc] then
     escortState[targetSrc] = nil
-    TriggerClientEvent('nblbnk_army:setEscorted', targetSrc, false)
+    TriggerClientEvent('nblbnk_usarmy:setEscorted', targetSrc, false)
   end
 
-  TriggerClientEvent('nblbnk_army:putInVehicle', targetSrc, netId, seat)
+  TriggerClientEvent('nblbnk_usarmy:putInVehicle', targetSrc, netId, seat)
 end)

@@ -1,4 +1,4 @@
--- nblbnk_army - Datenbankvorlage fuer ESX
+-- nblbnk_usarmy - Datenbankvorlage fuer ESX
 --
 -- Copyright (C) 2026 NebelRebell
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.

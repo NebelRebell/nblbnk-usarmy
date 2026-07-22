@@ -1,4 +1,4 @@
--- nblbnk_army - Bruecken-Adapter fuer Menues, Hinweise und Interaktionspunkte
+-- nblbnk_usarmy - Bruecken-Adapter fuer Menues, Hinweise und Interaktionspunkte
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
@@ -61,7 +61,7 @@ CreateThread(function()
   Army.MenuSystem = detectMenu()
   Army.TargetSystem = detectTarget()
 
-  print(('^2[nblbnk_army]^7 Menuesystem: %s, Interaktion: %s'):format(
+  print(('^2[nblbnk_usarmy]^7 Menuesystem: %s, Interaktion: %s'):format(
     Army.MenuSystem, Army.TargetSystem or 'Marker'))
 end)
 
@@ -122,7 +122,7 @@ function Army.OpenMenu(id, title, options)
           header = option.label,
           txt    = option.description,
           params = {
-            event = 'nblbnk_army:menuSelect',
+            event = 'nblbnk_usarmy:menuSelect',
             args  = { index = index },
           },
         }
@@ -173,7 +173,7 @@ end
 -- Bewusst AddEventHandler statt RegisterNetEvent: qb-menu loest das Event
 -- rein clientseitig aus. Als Netz-Event waere es zusaetzlich vom Server
 -- ausloesbar, ohne dass es dafuer einen Grund gaebe.
-AddEventHandler('nblbnk_army:menuSelect', function(payload)
+AddEventHandler('nblbnk_usarmy:menuSelect', function(payload)
   if not openOptions or type(payload) ~= 'table' then
     return
   end

@@ -1,4 +1,4 @@
--- nblbnk_army - US-Army-Job fuer FiveM
+-- nblbnk_usarmy - US-Army-Job fuer FiveM
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 --

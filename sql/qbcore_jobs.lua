@@ -1,4 +1,4 @@
--- nblbnk_army - Jobdefinition fuer QBCore
+-- nblbnk_usarmy - Jobdefinition fuer QBCore
 --
 -- Copyright (C) 2026 NebelRebell
 -- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
