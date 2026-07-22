@@ -1,34 +1,33 @@
--- nblbnk-usarmy - Serverlogik: Kommandozentrale (Einstellen, Befoerdern, Kasse)
+-- nblbnk-usarmy - Server logic: command centre (hiring, promotion, account)
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Alle Aktionen hier veraendern Jobzugehoerigkeit oder Geld und werden
--- deshalb ohne Ausnahme serverseitig geprueft (rules/security.md).
+-- Everything here changes job membership or money, so nothing runs without a
+-- server side check first.
 
---- Prueft die Boss-Berechtigung.
+--- Checks the command centre permission.
 -- @param src number
 -- @return boolean, number
 local function authorizeBoss(src)
   local isMember, grade = Army.IsMember(src)
 
   if not isMember then
-    Army.Notify(src, Config.Text.not_in_job, 'error')
+    Army.Notify(src, 'not_in_job', 'error')
     return false, 0
   end
 
   if grade < Config.BossGrade then
-    Army.Notify(src, Config.Text.rank_too_low, 'error')
+    Army.Notify(src, 'rank_too_low', 'error')
     return false, grade
   end
 
   return true, grade
 end
 
---- Sammelt alle derzeit verbundenen Angehoerigen.
--- Offline-Personal wuerde einen direkten Datenbankzugriff erfordern, der
--- je nach Framework unterschiedlich ausfaellt; siehe README, Abschnitt
--- "Bekannte Einschraenkungen".
+--- Collects every currently connected member.
+-- Offline staff would need direct database access, which differs between ESX
+-- and QBCore; see the README, "Known limits".
 -- @return table
 local function collectEmployees()
   local employees = {}
@@ -68,7 +67,7 @@ RegisterNetEvent('nblbnk-usarmy:requestBossData', function()
 end)
 
 -- ---------------------------------------------------------------------------
--- Personal
+-- Staff
 -- ---------------------------------------------------------------------------
 
 RegisterNetEvent('nblbnk-usarmy:hire', function(targetSrc)
@@ -86,7 +85,7 @@ RegisterNetEvent('nblbnk-usarmy:hire', function(targetSrc)
     return
   end
 
-  -- Naehe wird serverseitig geprueft, nicht vom Client behauptet.
+  -- Proximity is checked server side, not claimed by the client.
   local pedA, pedB = GetPlayerPed(src), GetPlayerPed(targetSrc)
 
   if not pedA or pedA == 0 or not pedB or pedB == 0 then
@@ -94,7 +93,7 @@ RegisterNetEvent('nblbnk-usarmy:hire', function(targetSrc)
   end
 
   if #(GetEntityCoords(pedA) - GetEntityCoords(pedB)) > 3.5 then
-    Army.Notify(src, Config.Text.no_target, 'error')
+    Army.Notify(src, 'no_target', 'error')
     return
   end
 
@@ -103,8 +102,8 @@ RegisterNetEvent('nblbnk-usarmy:hire', function(targetSrc)
   end
 
   if Army.SetJob(targetSrc, Config.JobName, 0) then
-    Army.Notify(src, Config.Text.hired, 'success')
-    Army.Notify(targetSrc, 'Du wurdest in die US Army aufgenommen.', 'success')
+    Army.Notify(src, 'hired', 'success')
+    Army.Notify(targetSrc, 'was_hired', 'success')
   end
 end)
 
@@ -131,17 +130,16 @@ RegisterNetEvent('nblbnk-usarmy:fire', function(targetSrc)
     return
   end
 
-  -- Niemand darf jemanden mit gleichem oder hoeherem Dienstgrad entlassen.
+  -- Nobody may dismiss someone of equal or higher rank.
   if targetGrade >= bossGrade then
-    Army.Notify(src, Config.Text.rank_too_low, 'error')
+    Army.Notify(src, 'rank_too_low', 'error')
     return
   end
 
-  -- Der Zieljob ist bewusst konfigurierbar gehalten: 'unemployed' ist der
-  -- ESX-Standard, QBCore verwendet ebenfalls 'unemployed'.
+  -- 'unemployed' is the default in both ESX and QBCore.
   if Army.SetJob(targetSrc, 'unemployed', 0) then
-    Army.Notify(src, Config.Text.fired, 'success')
-    Army.Notify(targetSrc, 'Du wurdest aus der US Army entlassen.', 'error')
+    Army.Notify(src, 'fired', 'success')
+    Army.Notify(targetSrc, 'was_fired', 'error')
   end
 end)
 
@@ -172,34 +170,33 @@ RegisterNetEvent('nblbnk-usarmy:setGrade', function(targetSrc, newGrade)
     return
   end
 
-  -- Weder jemanden auf oder ueber den eigenen Rang heben, noch jemanden
-  -- mit gleichem oder hoeherem Rang veraendern.
+  -- Neither promote anyone to or above one's own rank, nor touch equals.
   if targetGrade >= bossGrade or newGrade >= bossGrade then
-    Army.Notify(src, Config.Text.rank_too_low, 'error')
+    Army.Notify(src, 'rank_too_low', 'error')
     return
   end
 
-  if not Army.GetRank(newGrade) then
+  local rank = Army.GetRank(newGrade)
+
+  if not rank then
     return
   end
 
   if Army.SetJob(targetSrc, Config.JobName, newGrade) then
-    local rank = Army.GetRank(newGrade)
-
-    Army.Notify(src, Config.Text.promoted, 'success')
-    Army.Notify(targetSrc, ('Neuer Dienstgrad: %s'):format(rank.label), 'inform')
+    Army.Notify(src, 'promoted', 'success')
+    Army.Notify(targetSrc, 'new_rank', 'inform', rank.label)
   end
 end)
 
 -- ---------------------------------------------------------------------------
--- Kasse
+-- Society account
 -- ---------------------------------------------------------------------------
 
 RegisterNetEvent('nblbnk-usarmy:withdraw', function(amount)
   local src = source
 
   if type(amount) ~= 'number' or amount ~= math.floor(amount) or amount <= 0 then
-    Army.Notify(src, Config.Text.invalid_amount, 'error')
+    Army.Notify(src, 'invalid_amount', 'error')
     return
   end
 
@@ -209,18 +206,18 @@ RegisterNetEvent('nblbnk-usarmy:withdraw', function(amount)
 
   Army.RemoveSocietyMoney(amount, function(success)
     if not success then
-      Army.Notify(src, Config.Text.not_enough, 'error')
+      Army.Notify(src, 'not_enough', 'error')
       return
     end
 
     if not Army.AddMoney(src, amount, 'bank') then
-      -- Die Entnahme hat bereits stattgefunden; ohne Gutschrift waere das
-      -- Geld verloren. Deshalb wird der Vorgang protokolliert.
-      print(('^1[nblbnk-usarmy]^7 Gutschrift fehlgeschlagen nach Entnahme von %d ' ..
-             'durch %s. Bitte manuell pruefen.'):format(amount, Army.GetName(src)))
+      -- The withdrawal already happened; without the credit the money would
+      -- be lost, so the incident is logged for manual review.
+      print(('^1[nblbnk-usarmy]^7 Credit failed after withdrawing %d for %s. ' ..
+             'Please check manually.'):format(amount, Army.GetName(src)))
       return
     end
 
-    Army.Notify(src, ('%d entnommen.'):format(amount), 'success')
+    Army.Notify(src, 'withdrawn', 'success', amount)
   end)
 end)

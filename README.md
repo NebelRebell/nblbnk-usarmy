@@ -1,225 +1,236 @@
 # nblbnk-usarmy
 
-**Militaerjob fuer FiveM — laeuft auf ESX und QBCore aus einer einzigen
-Installation.**
+**A military job for FiveM — one install, runs on both ESX and QBCore.**
 
-Ein vollstaendiger Rollenspiel-Job rund um eine Militaereinheit: acht
-US-Dienstgrade, gestaffelte Waffenkammer, Fahrzeugausgabe fuer Land und
-Luft, Kommandozentrale zur Personalverwaltung, Festnahme mit Transport und
-ein ueberwachtes Sperrgebiet.
+A complete roleplay job built around a military unit: eight US ranks, a
+rank-gated armory, separate ground and air vehicle issue, a command centre for
+staff management, restraint with transport, and a monitored restricted area.
 
-Jobname in der Datenbank: **`usarmy`**
+Job name in the database: **`usarmy`**
+
+Shipped languages: **English** and **German**, switchable in one line.
 
 ---
 
-## Ein Job, beide Frameworks
+## One job, both frameworks
 
-Es gibt keine ESX-Fassung und keine QBCore-Fassung. Die Ressource stellt
-beim Start selbst fest, was auf dem Server laeuft, und richtet sich danach.
-Dasselbe gilt fuer Inventar, Menue, Interaktion und Kleidung — die
-Ressource nutzt, was vorhanden ist, statt es vorauszusetzen.
+There is no ESX build and no QBCore build. The resource works out for itself
+what the server is running and adapts. The same applies to inventory, menus,
+interaction and clothing — it uses whatever is there instead of demanding it.
 
-| Bereich | Wird erkannt | Wenn nichts davon da ist |
+| Area | Detected | If none of them is present |
 | :--- | :--- | :--- |
-| **Framework** | `es_extended`, `qb-core` | Ressource bleibt inaktiv und meldet es |
-| **Inventar** | `ox_inventory`, `qb-inventory` | Standardinventar des Frameworks |
-| **Menue** | `ox_lib`, `qb-menu` | ESX-Standardmenue |
-| **Interaktion** | `ox_target`, `qb-target` | Marker mit Taste **E** |
-| **Kleidung** | `illenium-appearance`, `qb-clothing`, `esx_skin` | Komponenten aus der Konfiguration |
-| **Gesellschaftskasse** | `esx_addonaccount`, `qb-management` | Kassenstand 0, Personalverwaltung laeuft weiter |
+| **Framework** | `es_extended`, `qb-core` | resource stays inactive and says so |
+| **Inventory** | `ox_inventory`, `qb-inventory` | the framework's stock inventory |
+| **Menu** | `ox_lib`, `qb-menu` | the stock ESX menu |
+| **Interaction** | `ox_target`, `qb-target` | markers with the **E** key |
+| **Clothing** | `illenium-appearance`, `qb-clothing`, `esx_skin` | components from the config |
+| **Society account** | `esx_addonaccount`, `qb-management` | balance 0, staff management still works |
 
-Jede Erkennung laesst sich in der `config.lua` uebersteuern, falls ein
-Server eine Sonderkonstellation faehrt. Keine dieser Ressourcen ist eine
-Pflichtabhaengigkeit — fehlt eine, greift die jeweilige Rueckfallebene,
-ohne dass etwas ausfaellt.
+Detection runs once at start-up through `GetResourceState` and can be
+overridden in `config.lua` for unusual setups. **None of these resources is a
+hard dependency** — when one is missing, the matching fallback takes over and
+nothing breaks.
 
 ---
 
-## Dienstgrade
+## Ranks
 
-Acht Stufen, an der US-Struktur orientiert. Jeder Rang steuert, welche
-Waffen und Fahrzeuge zugaenglich sind.
+Eight tiers modelled on the US structure. Every rank controls which weapons
+and vehicles are reachable.
 
-| Grad | Kuerzel | Bezeichnung | Sold | Schaltet frei |
+| Grade | Short | Rank | Pay | Unlocks |
 | ---: | :--- | :--- | ---: | :--- |
-| 0 | **PVT** | Private | 50 | Messer, Pistole, Weste, Verbandszeug, Crusader |
-| 1 | **SPC** | Specialist | 75 | Handschellen, Festnahme und Transport |
-| 2 | **SGT** | Sergeant | 100 | Schrotflinte, Barracks |
-| 3 | **SSG** | Staff Sergeant | 125 | Karabiner |
-| 4 | **SFC** | Sergeant First Class | 150 | Sturmgewehr, Insurgent |
-| 5 | **LT** | Lieutenant | 200 | Scharfschuetzengewehr, Buzzard |
-| 6 | **CPT** | Captain | 250 | Leichtes MG, Barrage, Valkyrie, Cargobob, **Kommandozentrale** |
-| 7 | **COL** | Colonel | 325 | hoechster Dienstgrad |
+| 0 | **PVT** | Private | 50 | knife, pistol, body armour, bandages, Crusader |
+| 1 | **SPC** | Specialist | 75 | handcuffs, restraint and transport |
+| 2 | **SGT** | Sergeant | 100 | shotgun, Barracks |
+| 3 | **SSG** | Staff Sergeant | 125 | carbine rifle |
+| 4 | **SFC** | Sergeant First Class | 150 | assault rifle, Insurgent |
+| 5 | **LT** | Lieutenant | 200 | sniper rifle, Buzzard |
+| 6 | **CPT** | Captain | 250 | light machine gun, Barrage, Valkyrie, Cargobob, **command centre** |
+| 7 | **COL** | Colonel | 325 | highest rank |
 
-Die Grenzen fuer Kommandozentrale und Festnahme liegen in
-`Config.BossGrade` und `Config.ArrestGrade`. Die Rangliste selbst steht in
-`Config.Ranks` und laesst sich erweitern, kuerzen oder umbenennen — die
-Datenbankeintraege muessen dann mitgezogen werden.
+The thresholds for the command centre and for restraint live in
+`Config.BossGrade` and `Config.ArrestGrade`. The rank list itself is
+`Config.Ranks` and can be extended, shortened or renamed — the database
+entries have to follow.
 
 ---
 
-## Was drin ist
+## What is in it
 
-### Dienst
+### Duty
 
-An- und Abmeldung an einem festen Punkt oder per `/armyduty`. Der
-Dienstzustand wird serverseitig gefuehrt, weil ESX serverseitig keinen
-kennt. Laeuft QBCore, wird er zusaetzlich nach `job.onduty` gespiegelt,
-damit andere Ressourcen ihn sehen. Waffenkammer, Fahrzeuge und Festnahme
-funktionieren ausschliesslich im Dienst.
+Clock in and out at a fixed point or with `/armyduty`. The duty state is kept
+server side, because ESX has no server side equivalent. On QBCore it is
+additionally mirrored into `job.onduty` so other resources can see it. Armory,
+vehicles and restraint only work while on duty.
 
-### Umkleide
+### Locker room
 
-Dienst- und Zivilkleidung. Ist eine Kleidungsressource vorhanden, wird
-deren Menue geoeffnet; sonst werden die Komponenten aus der Konfiguration
-gesetzt.
+Uniform and civilian clothing. When a clothing resource is present its own
+menu opens; otherwise the components from the configuration are applied.
 
-### Waffenkammer
+### Armory
 
-Ausruestung und Waffen, jeweils ab einem Dienstgrad freigegeben. Was ein
-Spieler noch nicht entnehmen darf, bleibt sichtbar, ist aber ausgegraut und
-nennt den benoetigten Rang — so ist der Aufstiegsweg im Spiel erkennbar,
-statt einfach zu fehlen.
+Equipment and weapons, each released from a given rank. Anything a player
+cannot take yet stays visible but greyed out and names the rank required — so
+the progression is readable in game instead of simply being absent.
 
-### Fahrzeugausgabe
+### Vehicle issue
 
-Getrennte Ausgabe fuer Land- und Luftfahrzeuge; ein Helikopter laesst sich
-nicht an der Landgarage anfordern. Fahrzeuge entstehen serverseitig,
-bekommen ein Kennzeichen im Format `ARMYnnnn` und werden als Dienstfahrzeug
-markiert. Die Rueckgabe akzeptiert ausschliesslich so markierte Fahrzeuge.
-Vor der Ausgabe wird geprueft, ob die Ausgabeposition frei ist.
+Separate issue points for ground and air; a helicopter cannot be requested at
+the ground garage. Vehicles are created server side, get a plate in the format
+`ARMYnnnn` and are flagged as service vehicles. Returning only accepts
+vehicles carrying that flag. The issue position is checked for obstructions
+first.
 
-### Kommandozentrale
+### Command centre
 
-Ab Captain, per `/armyboss`. Personal einsehen, Personen in der Naehe
-einstellen, entlassen, befoerdern und degradieren sowie Geld aus der
-Gesellschaftskasse entnehmen. Rangaenderungen sind nach oben begrenzt:
-niemand kann jemanden auf oder ueber den eigenen Rang heben oder
-Gleichrangige veraendern.
+From Captain upwards, via `/armyboss`. Review staff, hire nearby people,
+dismiss, promote and demote, and withdraw from the society account. Rank
+changes are capped: nobody can lift anyone to or above their own rank, or
+touch an equal.
 
-### Festnahme und Transport
+### Restraint and transport
 
-Fesseln, eskortieren, ins Fahrzeug setzen — `/cuff`, `/escort`, `/putin`.
-Gefesselte Spieler verlieren Angriff, Zielen, Sprint, Sprung und
-Waffenwechsel und spielen eine passende Animation, die auch nach einer
-Unterbrechung wieder gesetzt wird. Wer geloest wird, wird zugleich aus der
-Eskorte entlassen.
+Restrain, escort, put into a vehicle — `/cuff`, `/escort`, `/putin`.
+Restrained players lose attack, aim, sprint, jump and weapon switching, and
+play a matching animation that is re-applied if something interrupts it.
+Releasing someone also ends the escort.
 
-### Sperrgebiet
+### Restricted area
 
-Ein Militaergelaende mit Radius und Kartenmarkierung. Zivilisten werden beim
-Betreten gewarnt, Dienstpersonal erhaelt eine Meldung samt kurzzeitiger
-Markierung des Meldeorts. Ein Sperrintervall verhindert Dauerfeuer durch
-dieselbe Person.
+A military zone with a radius and a map overlay. Civilians are warned on
+entry, on-duty personnel get an alert with a temporary marker at the reported
+position. A cooldown stops the same person triggering it repeatedly.
+
+---
+
+## Languages
+
+Two locales ship with the resource: `locales/en.lua` and `locales/de.lua`.
+Switch with one line in `config.lua`:
+
+```lua
+Config.Locale = 'en'   -- or 'de'
+```
+
+Nothing user-facing is hardcoded — messages, menu titles, point names and
+armory entries all come from the locale files. Missing keys fall back to
+English, so a partial translation never produces blank text.
+
+**Adding a language:** copy `locales/en.lua` to `locales/<code>.lua`, translate
+the values, add the file to `fxmanifest.lua` and set `Config.Locale`.
+
+Rank names, vehicle models and place names stay untranslated on purpose —
+they are proper nouns.
+
+Messages sent by the server travel as locale keys, not as finished text, so
+each player reads them in the language their own client is set to.
 
 ---
 
 ## Installation
 
-1. Ordner nach `resources/nblbnk-usarmy` kopieren.
+1. Copy the folder to `resources/nblbnk-usarmy`.
 
-2. Job in der Datenbank anlegen:
+2. Create the job in the database:
 
-   - **ESX:** `sql/usarmy_esx.sql` einspielen. Legt Job, acht Dienstgrade
-     und das Gesellschaftskonto an.
-   - **QBCore:** den Eintrag aus `sql/qbcore_jobs.lua` in
-     `qb-core/shared/jobs.lua` uebernehmen.
+   - **ESX:** import `sql/usarmy_esx.sql`. Creates the job, the eight ranks
+     and the society account.
+   - **QBCore:** copy the entry from `sql/qbcore_jobs.lua` into
+     `qb-core/shared/jobs.lua`.
 
-3. In der `server.cfg` eintragen:
+3. Add to your `server.cfg`:
 
    ```cfg
    ensure nblbnk-usarmy
    ```
 
-4. **Koordinaten pruefen.** Die Standorte in `config.lua` liegen im Bereich
-   Fort Zancudo, sind aber Naeherungswerte und im Spiel zu ueberpruefen.
+4. **Check the coordinates.** The locations in `config.lua` sit around Fort
+   Zancudo but are approximations and need verifying in game.
 
-5. Server neu starten. Beim Start meldet die Konsole, welches Framework,
-   welches Inventar und welches Menuesystem erkannt wurden.
+5. Restart the server. On start-up the console reports which framework,
+   inventory, menu system and locale were detected.
 
-## Bedienung
+## Usage
 
-| Eingabe | Wirkung |
+| Input | Effect |
 | :--- | :--- |
-| Interaktionspunkt | Dienst, Umkleide, Waffenkammer, Fahrzeuge |
-| `/armyduty` | Dienst an- oder abmelden |
-| `/armyboss` | Kommandozentrale (ab Captain) |
-| `/cuff` | naechste Person fesseln oder loesen |
-| `/escort` | gefesselte Person eskortieren |
-| `/putin` | gefesselte Person ins Fahrzeug setzen |
+| Interaction point | duty, locker room, armory, vehicles |
+| `/armyduty` | clock in or out |
+| `/armyboss` | command centre (Captain and above) |
+| `/cuff` | restrain or release the nearest person |
+| `/escort` | escort a restrained person |
+| `/putin` | put a restrained person into a vehicle |
 
-Alle Kommandos sind ueber **Einstellungen > Tastenbelegung > FiveM** frei
-auf Tasten legbar. Ab Werk ist bewusst keine Taste vorbelegt, damit nichts
-mit bestehenden Bindungen kollidiert.
+All commands can be bound to keys under **Settings > Key Bindings > FiveM**.
+No key is bound by default, deliberately, so nothing collides with existing
+bindings.
 
-## Konfiguration
+## Configuration
 
-Es gibt keine im Code fest verdrahteten Positionen, Items, Fahrzeuge oder
-Texte. Alles steht kommentiert in der `config.lua`: Jobname, Gesellschaft,
-Dienstgrade mit Sold, Standorte, Waffenkammer, Fahrzeuge, Uniform,
-Sperrgebiete, Kartenmarkierung und saemtliche Bildschirmtexte.
-
----
-
-## Sicherheit
-
-Der Client stellt dar, der Server entscheidet. Vor jeder Wirkung prueft der
-Server erneut:
-
-- **Job, Dienstgrad und Dienstzustand** werden bei jedem Ereignis frisch
-  aus dem Framework gelesen, nie aus einer Angabe des Clients.
-- **Abstaende berechnet der Server selbst** ueber `GetEntityCoords` des
-  jeweiligen Peds. Eine vom Client mitgesendete Position wird an keiner
-  Stelle uebernommen — auch nicht beim Alarm aus dem Sperrgebiet, wo der
-  Server die Meldung anhand der ihm bekannten Position gegenprueft.
-- **Listenindizes** aus Menues werden auf Typ, Ganzzahligkeit und
-  Wertebereich geprueft, bevor sie als Tabellenindex dienen.
-- **Fahrzeuge entstehen serverseitig.** Die Markierung als Dienstfahrzeug
-  liegt in einem serverseitig gesetzten StateBag und ist damit vom Client
-  nicht faelschbar.
-- **Kein unnoetiges Netz-Event.** Rein interne Ereignisse sind als lokale
-  Handler registriert, damit sie nicht vom Netz ausloesbar sind.
-
-## Stand der Pruefung
-
-Ehrlich benannt, damit niemand ueberrascht wird.
-
-**Geprueft.** Alle Lua-Dateien gegen die Grammatik geparst — fehlerfrei.
-Statische Auswertung auf versehentlich globale Bezeichner — global
-geschrieben werden ausschliesslich `Config` und `Army`. Vollstaendiger
-Abgleich aller Ereignisnamen zwischen Client und Server — kein Ereignis
-ohne Empfaenger, kein Empfaenger ohne Ausloeser.
-
-**Nicht geprueft.** Kein Testlauf auf einem FXServer, weder gegen ESX noch
-gegen QBCore. Die Koordinaten sind nicht im Spiel verifiziert. Die
-Verteilung von Raengen und Ausruestung ist gesetzt, aber nicht erprobt.
-
-## Bekannte Grenzen
-
-- Die **Kommandozentrale zeigt nur verbundene Spieler.** Offline-Personal
-  braeuchte direkten Datenbankzugriff, der sich zwischen ESX und QBCore
-  unterscheidet.
-- Die **Uniform-Rueckfallebene ist unvollstaendig.** Ohne Kleidungsressource
-  laesst sich die Zivilkleidung nicht wiederherstellen, weil der
-  Ausgangszustand nirgends gespeichert wird.
-- **Kein eigenes Soldsystem.** Die Sold-Werte stehen in der Jobdefinition
-  und werden vom Framework ausgezahlt.
-- **Fahrzeuge werden bei der Rueckgabe geloescht**, nicht in eine
-  persistente Garage uebernommen.
+No positions, items, vehicles or texts are hardcoded. Everything is commented
+in `config.lua`: locale, job name, society, ranks with pay, locations, armory,
+vehicles, uniform, restricted zones and the map blip.
 
 ---
 
-## Urheber und Lizenz
+## Security
+
+The client presents, the server decides. Before anything takes effect the
+server re-checks:
+
+- **Job, rank and duty state** are read fresh from the framework on every
+  event, never from a client claim.
+- **Distances are computed by the server** from `GetEntityCoords` of the ped
+  in question. A position sent by the client is not used anywhere — including
+  the restricted area alert, where the server verifies the report against the
+  position it knows.
+- **List indices** from menus are validated for type, integerness and range
+  before being used as a table index.
+- **Vehicles are created server side.** The service vehicle flag lives in a
+  state bag written by the server and cannot be forged by a client.
+- **No unnecessary net events.** Purely internal events are registered as
+  local handlers so they cannot be triggered over the network.
+
+## Testing status
+
+Stated plainly so nobody is caught out.
+
+**Verified.** All Lua files parse cleanly against the grammar. Static analysis
+for accidental globals: the only globals written are `Config`, `Army` and
+`Locales`. Full cross-check of every event name between client and server: no
+event without a receiver, no receiver without a sender. Both locale files
+checked for key parity.
+
+**Not verified.** No test run on a live FXServer, against neither ESX nor
+QBCore. The coordinates have not been confirmed in game. The distribution of
+ranks and equipment is set but untested in play.
+
+## Known limits
+
+- The **command centre only lists connected players.** Offline staff would
+  require direct database access, which differs between ESX and QBCore.
+- The **uniform fallback is incomplete.** Without a clothing resource the
+  civilian outfit cannot be restored, because the original state is never
+  stored.
+- **No pay system of its own.** The pay values live in the job definition and
+  are paid out by the framework.
+- **Returned vehicles are deleted**, not moved into a persistent garage.
+
+---
+
+## Author and licence
 
 Copyright (C) 2026 **NebelRebell** — <https://github.com/NebelRebell>
 
-Vollstaendige Eigenentwicklung. Jede Zeile dieser Ressource wurde fuer sie
-geschrieben; es wurde kein Code aus anderen Job-Ressourcen uebernommen,
-angepasst oder abgeleitet.
+Entirely original work. Every line of this resource was written for it; no
+code was taken, adapted or derived from any other job resource.
 
-Veroeffentlicht unter der **GNU General Public License Version 3 oder
-spaeter**, vollstaendiger Text in [`LICENSE`](LICENSE). Wer die Ressource
-weitergibt — veraendert oder unveraendert — muss sie ebenfalls unter der
-GPL-3.0 stellen, den Quelltext mitliefern und die Urhebervermerke erhalten.
-Eine Verwendung in einem verschluesselten oder sonst geschlossenen
-Skriptpaket ist ausgeschlossen.
+Released under the **GNU General Public License version 3 or later**, full
+text in [`LICENSE`](LICENSE). Anyone redistributing this resource — modified
+or not — must also release it under the GPL-3.0, ship the source, and keep the
+copyright notices intact. Bundling it into an encrypted or otherwise closed
+script package is not permitted.

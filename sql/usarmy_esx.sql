@@ -1,12 +1,12 @@
--- nblbnk-usarmy - Datenbankvorlage fuer ESX
+-- nblbnk-usarmy - Database template for ESX
 --
 -- Copyright (C) 2026 NebelRebell
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Legt den Job `usarmy` und seine acht Dienstgrade an. Die Werte muessen
--- mit Config.Ranks in config.lua uebereinstimmen.
+-- Creates the `usarmy` job and its eight ranks. The values must match
+-- Config.Ranks in config.lua.
 --
--- Vor dem Einspielen eine Sicherung der Datenbank anlegen.
+-- Back up the database before importing.
 
 INSERT INTO `jobs` (`name`, `label`) VALUES
   ('usarmy', 'US Army')
@@ -25,8 +25,8 @@ ON DUPLICATE KEY UPDATE
   `label`  = VALUES(`label`),
   `salary` = VALUES(`salary`);
 
--- Gesellschaftskonto fuer das Boss-Menue.
--- Nur erforderlich, wenn esx_addonaccount eingesetzt wird.
+-- Society account for the command centre.
+-- Only required when esx_addonaccount is in use.
 INSERT INTO `addon_account` (`name`, `label`, `shared`) VALUES
   ('society_usarmy', 'US Army', 1)
 ON DUPLICATE KEY UPDATE `label` = VALUES(`label`);

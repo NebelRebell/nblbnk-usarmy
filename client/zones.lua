@@ -1,17 +1,16 @@
--- nblbnk-usarmy - Sperrzone / Militaergelaende
+-- nblbnk-usarmy - Restricted military area
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Der Client meldet nur, dass er eine Zone betreten hat. Die eigentliche
--- Alarmausloesung prueft der Server anhand der ihm bekannten Position
--- erneut (rules/security.md, Herkunftspruefung).
+-- The client only reports that it entered a zone. Raising the alert is a
+-- server decision, checked again against the position the server knows.
 
--- Zustand je Zone: ob der lokale Spieler aktuell darin ist.
+-- Per zone: whether the local player is currently inside it.
 local insideZone = {}
 local zoneBlips = {}
 
---- Legt die Radius-Markierungen auf der Karte an.
+--- Draws the radius markings on the map.
 local function createZoneBlips()
   for index, zone in ipairs(Config.RestrictedZones) do
     local blip = AddBlipForRadius(zone.coords.x, zone.coords.y, zone.coords.z, zone.radius)
@@ -35,8 +34,8 @@ CreateThread(function()
   createZoneBlips()
 
   while true do
-    -- Eine Zonenpruefung pro Sekunde reicht fachlich voellig aus; ein
-    -- kuerzeres Intervall waere reine CPU-Last (references/11_performance/waits.md).
+    -- One zone check per second is plenty; anything shorter would be pure
+    -- CPU cost for no gain.
     Wait(1000)
 
     local coords = GetEntityCoords(PlayerPedId())
@@ -52,7 +51,7 @@ CreateThread(function()
 
         if not isMember then
           if zone.warnCivilians then
-            Army.Notify(Config.Text.zone_warning, 'error')
+            Army.Notify('zone_warning', 'error')
           end
 
           if zone.alertOnDuty then
@@ -66,7 +65,7 @@ CreateThread(function()
   end
 end)
 
---- Alarmmeldung fuer Dienstpersonal.
+--- Alert for on-duty personnel.
 RegisterNetEvent('nblbnk-usarmy:zoneAlert', function(zoneIndex, coords)
   local zone = Config.RestrictedZones[zoneIndex]
 
@@ -74,13 +73,13 @@ RegisterNetEvent('nblbnk-usarmy:zoneAlert', function(zoneIndex, coords)
     return
   end
 
-  Army.Notify(('%s (%s)'):format(Config.Text.zone_alert, zone.label), 'error')
+  Army.Notify('zone_alert', 'error')
 
   if type(coords) ~= 'table' and type(coords) ~= 'vector3' then
     return
   end
 
-  -- Kurzzeitige Markierung des Meldeorts.
+  -- Temporary marker showing where the report came from.
   local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
   SetBlipSprite(blip, 161)
   SetBlipColour(blip, 1)

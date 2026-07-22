@@ -1,19 +1,23 @@
--- nblbnk-usarmy - US-Army-Job fuer FiveM
+-- nblbnk-usarmy - US Army job for FiveM
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
 --
--- Dieses Programm ist freie Software unter der GNU General Public License
--- Version 3 oder spaeter. Einzelheiten in der Datei LICENSE.
+-- This program is free software under the GNU General Public License
+-- version 3 or later. See the LICENSE file for details.
 
 fx_version 'cerulean'
 game 'gta5'
 
 author 'NebelRebell'
-description 'US-Army-Job mit automatischer Erkennung von ESX und QBCore'
-version '1.0.0'
+description 'US Army job with automatic detection of ESX and QBCore'
+version '1.1.0'
 
+-- Load order matters: locales define the Locales table, config.lua selects
+-- the active one, and the framework bridge exposes the lookup helper.
 shared_scripts {
   'config.lua',
+  'locales/en.lua',
+  'locales/de.lua',
   'bridge/framework.lua',
 }
 

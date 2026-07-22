@@ -1,28 +1,28 @@
--- nblbnk-usarmy - Serverlogik: Dienst, Waffenkammer, Fahrzeuge, Festnahme
+-- nblbnk-usarmy - Server logic: duty, armory, vehicles, restraint
 --
 -- Copyright (C) 2026 NebelRebell (github.com/NebelRebell)
--- Lizenz: GNU GPL v3 oder spaeter, siehe LICENSE.
+-- Licensed under the GNU GPL v3 or later, see LICENSE.
 --
--- Der Server ist die alleinige Autoritaet. Jedes eingehende Ereignis wird
--- auf Typ, Wertebereich, Jobzugehoerigkeit, Dienstgrad, Dienstzustand und
--- raeumliche Naehe geprueft, bevor es wirkt (rules/security.md).
+-- The server is the sole authority. Every incoming event is checked for
+-- parameter type, value range, job membership, rank, duty state and physical
+-- proximity before it has any effect.
 
--- Dienstzustand je Spieler-Source. ESX kennt serverseitig keinen
--- Dienstzustand, deshalb fuehrt diese Ressource ihn selbst.
+-- Duty state per player source. ESX has no server side duty concept, so this
+-- resource keeps its own.
 local dutyState = {}
 
--- Gefesselte Spieler und wer sie eskortiert.
+-- Restrained players and who is escorting them.
 local cuffedState = {}
 local escortState = {}
 
--- Zuletzt ausgeloester Zonenalarm je Spieler, gegen Dauerfeuer.
+-- Last zone alert per player, to stop it firing continuously.
 local lastZoneAlert = {}
 
 -- ---------------------------------------------------------------------------
--- Pruefhelfer
+-- Check helpers
 -- ---------------------------------------------------------------------------
 
---- Prueft Zugehoerigkeit, Dienstgrad und Dienstzustand in einem Schritt.
+--- Checks membership, rank and duty state in one go.
 -- @param src number
 -- @param minGrade number|nil
 -- @param needDuty boolean|nil
@@ -31,24 +31,24 @@ local function authorize(src, minGrade, needDuty)
   local isMember, grade = Army.IsMember(src)
 
   if not isMember then
-    Army.Notify(src, Config.Text.not_in_job, 'error')
+    Army.Notify(src, 'not_in_job', 'error')
     return false, 0
   end
 
   if needDuty and not dutyState[src] then
-    Army.Notify(src, Config.Text.not_on_duty, 'error')
+    Army.Notify(src, 'not_on_duty', 'error')
     return false, grade
   end
 
   if minGrade and grade < minGrade then
-    Army.Notify(src, Config.Text.rank_too_low, 'error')
+    Army.Notify(src, 'rank_too_low', 'error')
     return false, grade
   end
 
   return true, grade
 end
 
---- Abstand eines Spielers zu einer Position, serverseitig ermittelt.
+--- Distance from a player to a position, determined server side.
 -- @param src number
 -- @param coords vector3
 -- @return number
@@ -62,7 +62,7 @@ local function distanceTo(src, coords)
   return #(GetEntityCoords(ped) - coords)
 end
 
---- Abstand zwischen zwei Spielern.
+--- Distance between two players.
 -- @param a number
 -- @param b number
 -- @return number
@@ -76,7 +76,7 @@ local function distanceBetween(a, b)
   return #(GetEntityCoords(pedA) - GetEntityCoords(pedB))
 end
 
---- Prueft, ob ein Wert ein gueltiger Index einer Liste ist.
+--- Checks whether a value is a valid index into a list.
 -- @param value any
 -- @param list table
 -- @return boolean
@@ -88,7 +88,7 @@ local function isValidIndex(value, list)
 end
 
 -- ---------------------------------------------------------------------------
--- Dienst
+-- Duty
 -- ---------------------------------------------------------------------------
 
 RegisterNetEvent('nblbnk-usarmy:toggleDuty', function()
@@ -127,8 +127,8 @@ AddEventHandler('playerDropped', function()
   lastZoneAlert[src] = nil
 end)
 
---- Liefert alle Spieler im Dienst.
--- @return table Liste von Sources
+--- Returns every player currently on duty.
+-- @return table list of sources
 local function getOnDutyPlayers()
   local result = {}
 
@@ -142,7 +142,7 @@ local function getOnDutyPlayers()
 end
 
 -- ---------------------------------------------------------------------------
--- Waffenkammer
+-- Armory
 -- ---------------------------------------------------------------------------
 
 RegisterNetEvent('nblbnk-usarmy:takeFromArmory', function(index)
@@ -153,7 +153,7 @@ RegisterNetEvent('nblbnk-usarmy:takeFromArmory', function(index)
   end
 
   local entry = Config.Armory[index]
-  local allowed, grade = authorize(src, entry.minGrade, true)
+  local allowed = authorize(src, entry.minGrade, true)
 
   if not allowed then
     return
@@ -175,14 +175,16 @@ RegisterNetEvent('nblbnk-usarmy:takeFromArmory', function(index)
     Army.AddItem(src, entry.item, entry.count or 1)
   end
 
-  Army.Notify(src, ('%s erhalten.'):format(entry.label), 'success')
+  -- The label key is sent as-is; the client resolves it, so the message
+  -- appears in that player's locale rather than the server's.
+  Army.Notify(src, 'item_received', 'success', entry.labelKey)
 end)
 
 -- ---------------------------------------------------------------------------
--- Fahrzeuge
+-- Vehicles
 -- ---------------------------------------------------------------------------
 
---- Erzeugt ein Kennzeichen im Format "ARMY" plus vier Ziffern.
+--- Builds a plate in the format "ARMY" plus four digits.
 -- @return string
 local function makePlate()
   return ('ARMY%04d'):format(math.random(0, 9999))
@@ -199,7 +201,7 @@ RegisterNetEvent('nblbnk-usarmy:requestVehicle', function(vehicleIndex, garageIn
   local entry = Config.Vehicles[vehicleIndex]
   local garage = Config.Locations.garage[garageIndex]
 
-  -- Ein Luftfahrzeug darf nicht an der Landgarage ausgegeben werden.
+  -- An aircraft must not be issued at the ground garage.
   if entry.class ~= garage.class then
     return
   end
@@ -226,14 +228,14 @@ RegisterNetEvent('nblbnk-usarmy:requestVehicle', function(vehicleIndex, garageIn
   end
 
   if not DoesEntityExist(vehicle) then
-    Army.Notify(src, Config.Text.vehicle_blocked, 'error')
+    Army.Notify(src, 'vehicle_blocked', 'error')
     return
   end
 
   local plate = makePlate()
 
-  -- Kennzeichnung als Dienstfahrzeug. Der StateBag wird serverseitig
-  -- gesetzt und ist damit nicht vom Client manipulierbar.
+  -- Marking it as a service vehicle. The state bag is written server side and
+  -- therefore cannot be forged by a client.
   local state = Entity(vehicle).state
   state:set('nblbnk-usarmy', true, true)
   state:set('nblbnk-usarmy_plate', plate, true)
@@ -256,13 +258,13 @@ RegisterNetEvent('nblbnk-usarmy:storeVehicle', function(netId)
   local vehicle = NetworkGetEntityFromNetworkId(netId)
 
   if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
-    Army.Notify(src, Config.Text.no_vehicle, 'error')
+    Army.Notify(src, 'no_vehicle', 'error')
     return
   end
 
-  -- Nur eigene Dienstfahrzeuge duerfen eingelagert werden.
-  if not Entity(vehicle).state.nblbnk-usarmy then
-    Army.Notify(src, Config.Text.impound_denied, 'error')
+  -- Only the unit's own service vehicles may be stored.
+  if not Entity(vehicle).state['nblbnk-usarmy'] then
+    Army.Notify(src, 'impound_denied', 'error')
     return
   end
 
@@ -277,11 +279,11 @@ RegisterNetEvent('nblbnk-usarmy:storeVehicle', function(netId)
   end
 
   DeleteEntity(vehicle)
-  Army.Notify(src, Config.Text.vehicle_in, 'success')
+  Army.Notify(src, 'vehicle_in', 'success')
 end)
 
 -- ---------------------------------------------------------------------------
--- Sperrzone
+-- Restricted zone
 -- ---------------------------------------------------------------------------
 
 RegisterNetEvent('nblbnk-usarmy:zoneEntered', function(zoneIndex)
@@ -297,13 +299,13 @@ RegisterNetEvent('nblbnk-usarmy:zoneEntered', function(zoneIndex)
     return
   end
 
-  -- Angehoerige loesen keinen Alarm aus.
+  -- Members never trigger an alert.
   if Army.IsMember(src) then
     return
   end
 
-  -- Die Meldung des Clients wird nicht uebernommen, sondern anhand der
-  -- serverseitig bekannten Position selbst geprueft.
+  -- The client's claim is not taken at face value; the server checks the
+  -- position it knows for itself.
   if distanceTo(src, zone.coords) > zone.radius then
     return
   end
@@ -326,7 +328,7 @@ RegisterNetEvent('nblbnk-usarmy:zoneEntered', function(zoneIndex)
 end)
 
 -- ---------------------------------------------------------------------------
--- Festnahme und Transport
+-- Restraint and transport
 -- ---------------------------------------------------------------------------
 
 RegisterNetEvent('nblbnk-usarmy:toggleCuff', function(targetSrc)
@@ -345,13 +347,13 @@ RegisterNetEvent('nblbnk-usarmy:toggleCuff', function(targetSrc)
   end
 
   if distanceBetween(src, targetSrc) > 3.5 then
-    Army.Notify(src, Config.Text.no_target, 'error')
+    Army.Notify(src, 'no_target', 'error')
     return
   end
 
   cuffedState[targetSrc] = not cuffedState[targetSrc]
 
-  -- Wer geloest wird, wird zugleich nicht mehr eskortiert.
+  -- Releasing somebody also ends any escort.
   if not cuffedState[targetSrc] and escortState[targetSrc] then
     escortState[targetSrc] = nil
     TriggerClientEvent('nblbnk-usarmy:setEscorted', targetSrc, false)
@@ -375,14 +377,14 @@ RegisterNetEvent('nblbnk-usarmy:toggleEscort', function(targetSrc)
     return
   end
 
-  -- Eskortieren setzt eine gefesselte Person voraus.
+  -- Escorting requires a restrained person.
   if not cuffedState[targetSrc] then
-    Army.Notify(src, Config.Text.target_not_cuffed, 'error')
+    Army.Notify(src, 'target_not_cuffed', 'error')
     return
   end
 
   if distanceBetween(src, targetSrc) > 3.5 then
-    Army.Notify(src, Config.Text.no_target, 'error')
+    Army.Notify(src, 'no_target', 'error')
     return
   end
 
@@ -411,12 +413,12 @@ RegisterNetEvent('nblbnk-usarmy:putInVehicle', function(targetSrc, netId, seat)
   end
 
   if not cuffedState[targetSrc] then
-    Army.Notify(src, Config.Text.target_not_cuffed, 'error')
+    Army.Notify(src, 'target_not_cuffed', 'error')
     return
   end
 
   if distanceBetween(src, targetSrc) > 5.0 then
-    Army.Notify(src, Config.Text.no_target, 'error')
+    Army.Notify(src, 'no_target', 'error')
     return
   end
 
